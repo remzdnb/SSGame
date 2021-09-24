@@ -1,6 +1,8 @@
 # Visual Studio 2015 user specific files
 .vs/
 
+.idea/
+
 # Compiled Object files
 *.slo
 *.lo
@@ -42,12 +44,14 @@
 *.VC.opendb
 
 # Precompiled Assets
+SourceArt/*
 SourceArt/**/*.png
 SourceArt/**/*.tga
 
 # Binary Files
 Binaries/*
 Plugins/*/Binaries/*
+Plugins/*/Content/*
 
 # Builds
 Build/*
@@ -72,3 +76,6 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Content
+Content/*
