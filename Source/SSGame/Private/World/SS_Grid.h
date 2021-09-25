@@ -43,7 +43,7 @@ public:
 public:
 
 	UFUNCTION()
-	void OnTileHoverBegin(ASS_Tile* const HoveredTile, const FName& SelectedPawnRowName);
+	void OnTileHoverBegin(ASS_Tile* HoveredTile, const FName& SelectedPawnRowName);
 
 	UFUNCTION()
 	void OnTileHoverEnd();
@@ -113,14 +113,8 @@ public:
 	UFUNCTION()
 	ASS_Tile* const GetTileFromCoords(int32 TileX, int32 TileY) const;
 
-	//UFUNCTION()
-	//TArray<ASS_Tile*> GetTileGroup(const ASS_Tile* OriginTile, int32 GroupSizeX, int32 GroupSizeY) const;
-
 	UFUNCTION()
-	FSS_TileGroupData MakeSpawnTileGroup(ASS_Tile* OriginTile, int32 GroupSizeX, int32 GroupSizeY) const;
-
-	UFUNCTION()
-	bool GetTileGroup(
+	void GetTileGroup(
 		FSS_TileGroupData& GroupResult,
 		ASS_Tile* OriginTile,
 		int32 GroupSizeX,
@@ -130,7 +124,4 @@ public:
 	
 	UFUNCTION()
 	ASS_Tile* GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team);
-	
-	UFUNCTION()
-	bool IsValidPawnLocation(const ASS_Tile* const OriginTile, const FName& PawnRowName) const;
 };

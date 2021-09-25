@@ -18,9 +18,11 @@ class ASS_PlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
-	// Actor
-
 public:
+
+	ASS_PlayerController();
+
+	// Actor
 
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;

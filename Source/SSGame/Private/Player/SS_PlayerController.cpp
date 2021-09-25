@@ -10,6 +10,11 @@
 #include "Engine/World.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
+ASS_PlayerController::ASS_PlayerController()
+{
+	
+}
+
 void ASS_PlayerController::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();

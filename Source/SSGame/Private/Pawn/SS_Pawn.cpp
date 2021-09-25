@@ -5,7 +5,9 @@
 #include "UI/SS_PawnOTMWidget.h"
 //
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ASS_Pawn::ASS_Pawn()
 {
@@ -16,6 +18,12 @@ ASS_Pawn::ASS_Pawn()
 	MeshCT->SetCollisionProfileName("NoCollision");
 	MeshCT->SetGenerateOverlapEvents(false);
 	MeshCT->SetupAttachment(RootComponent);
+
+	CollisionBoxCT = CreateDefaultSubobject<UBoxComponent>(FName("CollisionBoxCT"));
+	CollisionBoxCT->SetupAttachment(RootComponent);
+
+	DetectionBoxCT = CreateDefaultSubobject<UBoxComponent>(FName("DetectionBoxCT"));
+	DetectionBoxCT->SetupAttachment(RootComponent);
 
 	OTMWidgetCT = CreateDefaultSubobject<UWidgetComponent>(FName("OTMWidgetCT"));
 	OTMWidgetCT->SetupAttachment(MeshCT);
@@ -54,12 +62,20 @@ void ASS_Pawn::Init(
 
 		for (uint8 YIndex = 1; YIndex < PawnData.SizeY; YIndex++)
 		{
-			MeshCT->AddRelativeLocation(FVector(0.0f, TILESIZE / 2, 0.0f));
+			if (Team == ESS_Team::North)
+				MeshCT->AddRelativeLocation(FVector(0.0f, TILESIZE / 2 * -1, 0.0f));
+			else
+				MeshCT->AddRelativeLocation(FVector(0.0f, TILESIZE / 2, 0.0f));
 		}
 
 		for (uint8 XIndex = 1; XIndex < PawnData.SizeX; XIndex++)
 		{
-			MeshCT->AddRelativeLocation(FVector(TILESIZE / 2 * -1, 0.0f, 0.0f));
+			//MeshCT->AddRelativeLocation(FVector(TILESIZE / 2 * -1, 0.0f, 0.0f));
+			
+			if (Team == ESS_Team::North)
+				MeshCT->AddRelativeLocation(FVector(TILESIZE / 2, 0.0f, 0.0f));
+			else
+				MeshCT->AddRelativeLocation(FVector(TILESIZE / 2 * -1, 0.0f, 0.0f));
 		}
 
 		//
@@ -77,10 +93,49 @@ void ASS_Pawn::Init(
 	}
 }
 
+inline void ASS_Pawn::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (GetWorld()->IsGameWorld() == false)
+		return;
+
+	// Initialize collision box.
+	
+	int32 CollisionBoxXOffset = 0;
+	if (Team == ESS_Team::North)
+		CollisionBoxXOffset += TILESIZE / 2 * (PawnData.SizeX - 1);
+	else
+		CollisionBoxXOffset -= TILESIZE / 2 * (PawnData.SizeX - 1);
+
+	int32 CollisionBoxYOffset = 0;
+	if (Team == ESS_Team::North)
+		CollisionBoxYOffset -= TILESIZE / 2 * (PawnData.SizeY - 1);
+	else
+		CollisionBoxYOffset += TILESIZE / 2 * (PawnData.SizeY - 1);
+		
+	CollisionBoxCT->SetBoxExtent(FVector(PawnData.SizeX * TILESIZE / 2, PawnData.SizeY * TILESIZE / 2, TILESIZE / 2));
+	CollisionBoxCT->SetRelativeLocation(FVector(CollisionBoxXOffset, CollisionBoxYOffset, TILESIZE / 2));
+	
+	// Initialize detection box.
+
+	int32 DetectionBoxXOffset = 0;
+	if (Team == ESS_Team::North)
+		DetectionBoxXOffset += TILESIZE / 2 * (PawnData.SizeX - 1);
+	else
+		DetectionBoxXOffset -= TILESIZE / 2 * (PawnData.SizeX - 1);
+
+	DetectionBoxCT->SetBoxExtent(FVector(
+		PawnData.AttackRange * TILESIZE / 2 - (TILESIZE / 2),
+		PawnData.AttackRange * TILESIZE / 2 - (TILESIZE / 2),
+		TILESIZE / 4
+	));
+	DetectionBoxCT->SetRelativeLocation(FVector(CollisionBoxXOffset, CollisionBoxYOffset, TILESIZE / 2));
+}
+
 void ASS_Pawn::BeginPlay()
 {
 	Super::BeginPlay();
-
 	
 	if (OTMWidgetCT)
 	{
@@ -99,7 +154,7 @@ void ASS_Pawn::BeginPlay()
 		MovementTimeline.AddInterpFloat(MovementCurve, MovementTimelineProgressCallback);
 		MovementTimeline.SetTimelineFinishedFunc(MovementTimelineFinishedCallback);
 		MovementTimeline.SetLooping(false);
-		MovementTimeline.SetPlayRate(0.5f);
+		MovementTimeline.SetPlayRate(PawnData.MoveSpeed);
 	}
 }
 
@@ -113,18 +168,21 @@ void ASS_Pawn::Tick(float DeltaTime)
 void ASS_Pawn::StartMoveToTileGroup()
 {
 	MoveStartLocation = GetActorLocation();
+	MoveDirection = UKismetMathLibrary::FindLookAtRotation(
+		MoveStartLocation,
+		TileGroup.OriginTile->CenterLocation
+	).Vector();
+	MoveDistance = FVector::Dist(MoveStartLocation, TileGroup.OriginTile->CenterLocation);
+	
 	MovementTimeline.PlayFromStart();
 	State = ESS_PawnState::Moving;
 }
 
 void ASS_Pawn::MovementTimelineProgress(float Value)
 {
-	const float NewXPosition = MoveStartLocation.X - TileGroup.OriginTile->GetActorLocation().X * Value;
-	const float NewYPosition = MoveStartLocation.Y - TileGroup.OriginTile->GetActorLocation().Y * Value;
-
-	//SetActorLocation(FVector(NewXPosition, NewYPosition, GetActorLocation().Z));
-
-	SetActorLocation(TileGroup.OriginTile->CenterLocation);
+	const FVector NewLocation = MoveStartLocation + MoveDirection * MoveDistance * Value;
+	
+	SetActorLocation(NewLocation);
 }
 
 void ASS_Pawn::MovementTimelineEnd()

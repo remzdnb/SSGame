@@ -89,9 +89,9 @@ struct FSS_TileGroupData
 	
 	FSS_TileGroupData()
 	{
+		bIsValid = true;
 		bIsInSpawn = true;
 		OriginTile = nullptr;
-		bIsValid = true;
 	}
 };
 
@@ -117,9 +117,21 @@ struct FSS_PawnData : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float MoveSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 AttackRange;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float AttackSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Owning Pawn", meta = (AllowPrivateAccess = "true"))
+	UAnimSequence* IdleAnim;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Owning Pawn", meta = (AllowPrivateAccess = "true"))
+	UAnimSequence* MoveAnim;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Owning Pawn", meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* AnimMontage;
 	
 	FSS_PawnData()
 	{
@@ -129,7 +141,52 @@ struct FSS_PawnData : public FTableRowBase
 		SizeX = 1;
 		SizeY = 1;
 		MoveSpeed = 100.0f;
+		AttackRange = 1;
 		AttackSpeed = 0.1f;
+		IdleAnim = nullptr;
+		MoveAnim = nullptr;
+		AnimMontage = nullptr;
+	}
+};
+
+// Game AI
+
+USTRUCT(BlueprintType)
+struct FSS_PawnSpawnData : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FName PawnDataRowName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 PositionX;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 PositionY;
+	
+	FSS_PawnSpawnData()
+	{
+		PawnDataRowName = "None";
+		PositionX = 0;
+		PositionY = 0;
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FSS_WaveSpawnData : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<FSS_PawnSpawnData> WaveSpawnSettings;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float NextWaveTimer;
+	
+	FSS_WaveSpawnData()
+	{
+		NextWaveTimer = 10.0f;
 	}
 };
 

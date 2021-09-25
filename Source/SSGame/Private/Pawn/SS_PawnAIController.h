@@ -37,4 +37,7 @@ private:
 	
 	UPROPERTY() //Weakptr ?
 	ASS_Pawn* ControlledPawn;
+
+	UPROPERTY()
+	bool bWantsToMove;
 };

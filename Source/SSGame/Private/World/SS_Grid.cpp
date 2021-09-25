@@ -91,12 +91,24 @@ void ASS_Grid::SpawnTiles()
 	}
 }
 
-void ASS_Grid::OnTileHoverBegin(ASS_Tile* const HoveredTile, const FName& SelectedPawnRowName)
+void ASS_Grid::OnTileHoverBegin(ASS_Tile* HoveredTile, const FName& SelectedPawnRowName)
 {
+	if (HoveredTile == nullptr)
+		return;
+	
 	const FSS_PawnData* PawnData = GInstance->GetPawnDataFromRow(SelectedPawnRowName);
 	if (PawnData)
 	{
-		DemoPawnTileGroup = MakeSpawnTileGroup(HoveredTile, PawnData->SizeX, PawnData->SizeY);
+		/*GetTileGroup(DemoPawnTileGroup, HoveredTile, PawnData->SizeX, PawnData->SizeY);
+		if (DemoPawnTileGroup.bIsValid)
+		{
+			if (DemoPawnTileGroup.bIsInSpawn)
+			{
+				SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, DemoPawnTileGroup.OriginTile->TileData.Team, true);
+			}
+		}*/
+		//DemoPawnTileGroup = MakeSpawnTileGroup(HoveredTile, PawnData->SizeX, PawnData->SizeY);
+		GetTileGroup(DemoPawnTileGroup, HoveredTile, PawnData->SizeX, PawnData->SizeY);
 		SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, true);
 	}
 }
@@ -111,7 +123,7 @@ void ASS_Grid::OnTileHoverEnd()
 
 void ASS_Grid::OnTileClicked(ASS_Tile* const ClickedTile, const FName& SelectedPawnRowName)
 {
-	if (DemoPawnTileGroup.bIsValid)
+	if (DemoPawnTileGroup.bIsValid && DemoPawnTileGroup.bIsInSpawn)
 	{
 		SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, false);
 	}
@@ -128,11 +140,20 @@ void ASS_Grid::SpawnPawn(
 		TileGroup.OriginTile->GetActorLocation().Y + TILESIZE / 2,
 		0.0f
 	);
+
+	FRotator SpawnRotation = FRotator(0.0f, -90.0f, 0.0f);
+	if (TileGroup.OriginTile->TileData.Team == ESS_Team::South)
+		SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
+	if (TileGroup.OriginTile->TileData.Team == ESS_Team::North)
+		SpawnRotation = FRotator(0.0f, 180.0f, 0.0f);
+	
 	const FTransform SpawnTransform = FTransform(
-		FRotator(0.0f, 0.0f, 0.0f),
+		SpawnRotation,
 		SpawnLocation,
 		FVector(1.0f)
 	);
+
+	//
 	
 	ASS_Pawn* NewPawn = GetWorld()->SpawnActorDeferred<ASS_Pawn>(
 		GInstance->GameSettings->PawnBP, SpawnTransform,
@@ -142,12 +163,16 @@ void ASS_Grid::SpawnPawn(
 	);
 	if (NewPawn)
 	{
+		bool bIsValidDemoPawn = true;
+		if (TileGroup.bIsValid == false || TileGroup.bIsInSpawn == false)
+			bIsValidDemoPawn = false;
+		
 		NewPawn->Init(
 			CharacterRowName,
 			TileGroup,
 			TileGroup.OriginTile->TileData.Team,
 			bIsDemoPawn,
-			TileGroup.bIsValid
+			bIsValidDemoPawn
 		);
 		
 		UGameplayStatics::FinishSpawningActor(NewPawn, SpawnTransform);
@@ -171,25 +196,25 @@ bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
 		return false;
 	
 	FSS_TileGroupData TargetTileGroup;
-	const bool bIsValidTargetTileGroup = GetTileGroup(
+	GetTileGroup(
 		TargetTileGroup,
 		ForwardTile,
 		PawnToMove->PawnData.SizeX,
 		PawnToMove->PawnData.SizeY,
 		PawnToMove
 	);
-	if (bIsValidTargetTileGroup)
+	if (TargetTileGroup.bIsValid)
 	{
 		UnregisterPawnFromGrid(PawnToMove);
 		RegisterPawnToGrid(PawnToMove, TargetTileGroup);
 		PawnToMove->StartMoveToTileGroup();
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement : ValidTargetTileGroup = "),
+	/*UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement : ValidTargetTileGroup = "),
 	       *FString::FromInt(bIsValidTargetTileGroup)
-	);
+	);*/
 
-	return bIsValidTargetTileGroup;
+	return TargetTileGroup.bIsValid;
 }
 
 void ASS_Grid::RegisterPawnToGrid(ASS_Pawn* PawnToRegister, const FSS_TileGroupData& TileGroup)
@@ -237,64 +262,23 @@ ASS_Tile* const ASS_Grid::GetTileFromCoords(int32 TileX, int32 TileY) const
 	}
 }
 
-/*TArray<ASS_Tile*> ASS_Grid::GetTileGroup(const ASS_Tile* OriginTile, int32 GroupSizeX, int32 GroupSizeY) const
-{
-	TArray<ASS_Tile*> TileGroup;
-	
-	for (int32 XOffset = 0; XOffset > GroupSizeX * -1; XOffset--)
-	{
-		for (int32 YOffset = 0; YOffset < GroupSizeY; YOffset++)
-		{
-			TileGroup.Add(GetTileFromCoords(
-				OriginTile->TileData.PositionX + XOffset,
-				OriginTile->TileData.PositionY + YOffset
-			));
-		}
-	}
-	
-	return TileGroup;
-}*/
-
-FSS_TileGroupData ASS_Grid::MakeSpawnTileGroup(ASS_Tile* OriginTile, int32 GroupSizeX, int32 GroupSizeY) const
-{
-	FSS_TileGroupData TileGroup;
-
-	TileGroup.OriginTile = OriginTile;
-
-	for (int32 XOffset = 0; XOffset > GroupSizeX * -1; XOffset--)
-	{
-		for (int32 YOffset = 0; YOffset < GroupSizeY; YOffset++)
-		{
-			ASS_Tile* TileToAdd = GetTileFromCoords(
-				OriginTile->TileData.PositionX + XOffset,
-				OriginTile->TileData.PositionY + YOffset
-			);
-
-			if (TileToAdd == nullptr ||
-				TileToAdd->TileData.Type != ESS_TileType::Spawn ||
-				TileToAdd->GetRegisteredPawn() != nullptr)
-			{
-				TileGroup.bIsValid = false;
-				return TileGroup;
-			}
-
-			TileGroup.TileArray.Add(TileToAdd);
-		}
-	}
-	
-	return TileGroup;
-}
-
-bool ASS_Grid::GetTileGroup(
+void ASS_Grid::GetTileGroup(
 	FSS_TileGroupData& GroupResult,
 	ASS_Tile* OriginTile,
 	int32 GroupSizeX,
 	int32 GroupSizeY,
 	const ASS_Pawn* PawnToIgnore)
 {
-	if (OriginTile == nullptr)
-		return false; // ToDo : check better solution for crash
+	GroupResult.bIsValid = true;
+	GroupResult.bIsInSpawn = true;
+	GroupResult.TileArray.Empty();
 	
+	if (OriginTile == nullptr)
+	{
+		GroupResult.bIsValid = false;
+		return;
+	}
+
 	GroupResult.OriginTile = OriginTile;
 
 	for (int32 XOffset = 0; XOffset > GroupSizeX * -1; XOffset--)
@@ -306,6 +290,12 @@ bool ASS_Grid::GetTileGroup(
 				OriginTile->TileData.PositionY + YOffset
 			);
 
+			if (TileToAdd == nullptr)
+			{
+				GroupResult.bIsValid = false;
+				return;
+			}
+
 			if (TileToAdd->TileData.Type != ESS_TileType::Spawn)
 			{
 				GroupResult.bIsInSpawn = false;
@@ -315,20 +305,20 @@ bool ASS_Grid::GetTileGroup(
 			{
 				if (PawnToIgnore == nullptr)
 				{
-					return false;
+					GroupResult.bIsValid = false;
+					return;
 				}
 				
 				if (TileToAdd->GetRegisteredPawn() != PawnToIgnore)
 				{
-					return false;
+					GroupResult.bIsValid = false;
+					return;
 				}
 			}
 
 			GroupResult.TileArray.Add(TileToAdd);
 		}
 	}
-	
-	return true;
 }
 
 ASS_Tile* ASS_Grid::GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team)
@@ -344,23 +334,5 @@ ASS_Tile* ASS_Grid::GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team)
 	}
 	
 	return nullptr;
-}
-
-bool ASS_Grid::IsValidPawnLocation(const ASS_Tile* const OriginTile, const FName& PawnRowName) const
-{
-	const FSS_PawnData* const PawnData = GInstance->GetPawnDataFromRow(PawnRowName);
-	if (PawnData == nullptr)
-		return false;
-
-	if (OriginTile->GetRegisteredPawn().IsValid())
-	{
-		return false;
-	}
-	
-	for (uint8 XIndex = 1; XIndex < PawnData->SizeX; XIndex++)
-	{
-	}
-	
-	return true;
 }
 

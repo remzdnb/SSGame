@@ -7,6 +7,11 @@
 ASS_PawnAIController::ASS_PawnAIController()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bWantsPlayerState = false;
+
+	//
+
+	bWantsToMove = false;
 }
 
 void ASS_PawnAIController::PostInitializeComponents()

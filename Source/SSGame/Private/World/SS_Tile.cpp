@@ -42,9 +42,9 @@ void ASS_Tile::BeginPlay()
 	if (TileData.Team == ESS_Team::Neutral)
 		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->NeutralTileColor);
 	if (TileData.Team == ESS_Team::South)
-		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->AllyTileColor);
-	if (TileData.Team == ESS_Team::North)
 		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->EnemyTileColor);
+	if (TileData.Team == ESS_Team::North)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->AllyTileColor);
 
 	ParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->EmptyTileOpacity);
 }
@@ -58,12 +58,26 @@ void ASS_Tile::RegisterPawnBPI_Implementation(ASS_Pawn* PawnToRegister)
 {
 	RegisteredPawn = PawnToRegister;
 
+	if (RegisteredPawn->Team == ESS_Team::Neutral)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->NeutralTileColor);
+	if (RegisteredPawn->Team == ESS_Team::South)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->EnemyTileColor);
+	if (RegisteredPawn->Team == ESS_Team::North)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->AllyTileColor);
+	
 	ParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->OwnedTileOpacity);
 }
 
 void ASS_Tile::UnregisterPawnBPI_Implementation()
 {
 	RegisteredPawn.Reset();
+
+	if (TileData.Team == ESS_Team::Neutral)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->NeutralTileColor);
+	if (TileData.Team == ESS_Team::South)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->EnemyTileColor);
+	if (TileData.Team == ESS_Team::North)
+		ParticleCT->SetColorParameter("Color", GInstance->GameSettings->AllyTileColor);
 
 	ParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->EmptyTileOpacity);
 }

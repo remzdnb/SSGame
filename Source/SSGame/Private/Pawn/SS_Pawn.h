@@ -13,9 +13,7 @@ class ASS_Pawn : public APawn
 	GENERATED_BODY()
 
 public:
-
-	// Initialization
-
+	
 	ASS_Pawn();
 
 	UFUNCTION()
@@ -28,7 +26,8 @@ public:
 	);
 
 	// Actor
-	
+
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	
@@ -54,6 +53,12 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USkeletalMeshComponent* MeshCT;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UBoxComponent* CollisionBoxCT;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UBoxComponent* DetectionBoxCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OTMWidgetCT;
@@ -95,4 +100,13 @@ private:
 
 	UPROPERTY()
 	FVector MoveStartLocation;
+
+	UPROPERTY()
+	FVector MoveDirection;
+
+	UPROPERTY()
+	float MoveDistance;
+	
+	///// Combat
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
