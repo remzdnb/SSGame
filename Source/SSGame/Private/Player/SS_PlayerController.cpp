@@ -63,6 +63,13 @@ void ASS_PlayerController::BeginPlay()
 	{
 		MainHUDWidget->AddToViewport();
 	}
+
+	// Debug
+
+	if (GInstance->GameSettings->bDebugProjectile)
+	{
+		ConsoleCommand("show Splines");	
+	}
 }
 
 void ASS_PlayerController::Tick(float DeltaTime)

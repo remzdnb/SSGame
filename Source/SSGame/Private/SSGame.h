@@ -16,6 +16,15 @@ enum class ESS_Team : uint8
 };
 
 UENUM(BlueprintType)
+enum class ESS_Direction : uint8
+{
+	South,
+	North,
+	East,
+	West
+};
+
+UENUM(BlueprintType)
 enum class ESS_TileType : uint8
 {
 	Base,
@@ -34,10 +43,18 @@ enum class ESS_TileState : uint8
 UENUM(BlueprintType)
 enum class ESS_PawnState : uint8
 {
-	Disabled,
+	Demo,
 	Idling,
 	Moving,
 	Attacking
+};
+
+UENUM(BlueprintType)
+enum class ESS_PawnAnimation : uint8
+{
+	Idle,
+	Move,
+	Attack
 };
 
 USTRUCT(BlueprintType)
@@ -103,49 +120,65 @@ struct FSS_PawnData : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FName DisplayName;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<class ASS_Pawn> Class;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class USkeletalMesh* MeshTemplate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FVector MeshScale;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsMeshFacingXAxis;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	uint8 SizeX;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	uint8 SizeY;
+	uint8 Size;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float MoveSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	float MaxHealth;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat_Ranged")
+	bool HasRangedAttack;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat_Ranged")
+	TSubclassOf<class ASS_Projectile> ProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat_Ranged")
+	TSubclassOf<class ASS_Projectile> ProjectileSpeed;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float AttackDamage;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float AttackSpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	int32 AttackRange;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	float AttackSpeed;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Owning Pawn", meta = (AllowPrivateAccess = "true"))
-	UAnimSequence* IdleAnim;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Owning Pawn", meta = (AllowPrivateAccess = "true"))
-	UAnimSequence* MoveAnim;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Owning Pawn", meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* AnimMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UParticleSystem* HitParticle;
 	
 	FSS_PawnData()
 	{
 		DisplayName = "DefaultName";
 		MeshTemplate = nullptr;
 		bIsMeshFacingXAxis = false;
-		SizeX = 1;
-		SizeY = 1;
+		Size = 1;
 		MoveSpeed = 100.0f;
-		AttackRange = 1;
+		MaxHealth = 1000.0f;
+		HasRangedAttack = false;
+		AttackDamage = 100.0f;
 		AttackSpeed = 0.1f;
-		IdleAnim = nullptr;
-		MoveAnim = nullptr;
+		AttackRange = 1;
 		AnimMontage = nullptr;
+		HitParticle = nullptr;
 	}
 };
 

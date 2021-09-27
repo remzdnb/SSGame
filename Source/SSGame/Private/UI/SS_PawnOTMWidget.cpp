@@ -8,6 +8,8 @@
 void USS_PawnOTMWidget::Init(ASS_Pawn* NewPawnOwner)
 {
 	PawnOwner = NewPawnOwner;
+
+	PawnOwner->OnPawnHealthUpdatedEvent.AddUniqueDynamic(this, &USS_PawnOTMWidget::OnHealthUpdated);
 }
 
 void USS_PawnOTMWidget::NativeOnInitialized()
@@ -33,4 +35,9 @@ void USS_PawnOTMWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 			));
 		}
 	}
+}
+
+void USS_PawnOTMWidget::OnHealthUpdated(float NewHealth, float NewMaxHealth)
+{
+	HealthProgressBar->SetPercent(NewHealth / NewMaxHealth);
 }

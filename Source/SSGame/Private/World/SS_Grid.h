@@ -81,7 +81,7 @@ public:
 	UFUNCTION()
 	void SpawnPawn(
 		const FSS_TileGroupData& TileGroup,
-		const FName& CharacterRowName,
+		const FName& PawnDataRowName,
 		bool bIsDemoPawn = false
 	);
 
@@ -117,8 +117,7 @@ public:
 	void GetTileGroup(
 		FSS_TileGroupData& GroupResult,
 		ASS_Tile* OriginTile,
-		int32 GroupSizeX,
-		int32 GroupSizeY,
+		int32 GroupSize,
 		const ASS_Pawn* PawnToIgnore = nullptr
 	);
 	

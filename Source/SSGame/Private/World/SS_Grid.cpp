@@ -99,16 +99,7 @@ void ASS_Grid::OnTileHoverBegin(ASS_Tile* HoveredTile, const FName& SelectedPawn
 	const FSS_PawnData* PawnData = GInstance->GetPawnDataFromRow(SelectedPawnRowName);
 	if (PawnData)
 	{
-		/*GetTileGroup(DemoPawnTileGroup, HoveredTile, PawnData->SizeX, PawnData->SizeY);
-		if (DemoPawnTileGroup.bIsValid)
-		{
-			if (DemoPawnTileGroup.bIsInSpawn)
-			{
-				SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, DemoPawnTileGroup.OriginTile->TileData.Team, true);
-			}
-		}*/
-		//DemoPawnTileGroup = MakeSpawnTileGroup(HoveredTile, PawnData->SizeX, PawnData->SizeY);
-		GetTileGroup(DemoPawnTileGroup, HoveredTile, PawnData->SizeX, PawnData->SizeY);
+		GetTileGroup(DemoPawnTileGroup, HoveredTile, PawnData->Size);
 		SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, true);
 	}
 }
@@ -131,21 +122,27 @@ void ASS_Grid::OnTileClicked(ASS_Tile* const ClickedTile, const FName& SelectedP
 
 void ASS_Grid::SpawnPawn(
 	const FSS_TileGroupData& TileGroup,
-	const FName& CharacterRowName,
+	const FName& PawnDataRowName,
 	bool bIsDemoPawn
 )
 {
+	const FSS_PawnData* const PawnData = GInstance->GetPawnDataFromRow(PawnDataRowName);
+	if (PawnData == nullptr)
+		return;
+	
+	//
+	
 	const FVector SpawnLocation = FVector(
 		TileGroup.OriginTile->GetActorLocation().X + TILESIZE / 2,
 		TileGroup.OriginTile->GetActorLocation().Y + TILESIZE / 2,
 		0.0f
 	);
 
-	FRotator SpawnRotation = FRotator(0.0f, -90.0f, 0.0f);
-	if (TileGroup.OriginTile->TileData.Team == ESS_Team::South)
+	FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
+	/*if (TileGroup.OriginTile->TileData.Team == ESS_Team::South)
 		SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
 	if (TileGroup.OriginTile->TileData.Team == ESS_Team::North)
-		SpawnRotation = FRotator(0.0f, 180.0f, 0.0f);
+		SpawnRotation = FRotator(0.0f, 180.0f, 0.0f);*/
 	
 	const FTransform SpawnTransform = FTransform(
 		SpawnRotation,
@@ -156,7 +153,8 @@ void ASS_Grid::SpawnPawn(
 	//
 	
 	ASS_Pawn* NewPawn = GetWorld()->SpawnActorDeferred<ASS_Pawn>(
-		GInstance->GameSettings->PawnBP, SpawnTransform,
+		PawnData->Class,
+		SpawnTransform,
 		this,
 		nullptr,
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn
@@ -168,15 +166,13 @@ void ASS_Grid::SpawnPawn(
 			bIsValidDemoPawn = false;
 		
 		NewPawn->Init(
-			CharacterRowName,
+			PawnDataRowName,
 			TileGroup,
 			TileGroup.OriginTile->TileData.Team,
 			bIsDemoPawn,
 			bIsValidDemoPawn
 		);
-		
-		UGameplayStatics::FinishSpawningActor(NewPawn, SpawnTransform);
-		
+
 		if (bIsDemoPawn)
 		{
 			DemoPawn = NewPawn;
@@ -186,12 +182,14 @@ void ASS_Grid::SpawnPawn(
 			RegisterPawnToGrid(NewPawn, TileGroup);
 			PawnArray.Add(NewPawn);
 		}
+		
+		UGameplayStatics::FinishSpawningActor(NewPawn, SpawnTransform);
 	}
 }
 
 bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
 {
-	ASS_Tile* ForwardTile = GetForwardTile(PawnToMove->TileGroup.OriginTile, PawnToMove->Team);
+	ASS_Tile* ForwardTile = GetForwardTile(PawnToMove->TileGroup.OriginTile, PawnToMove->Team); // pass direction instead of team
 	if (ForwardTile == nullptr)
 		return false;
 	
@@ -199,8 +197,7 @@ bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
 	GetTileGroup(
 		TargetTileGroup,
 		ForwardTile,
-		PawnToMove->PawnData.SizeX,
-		PawnToMove->PawnData.SizeY,
+		PawnToMove->PawnData.Size,
 		PawnToMove
 	);
 	if (TargetTileGroup.bIsValid)
@@ -208,17 +205,20 @@ bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
 		UnregisterPawnFromGrid(PawnToMove);
 		RegisterPawnToGrid(PawnToMove, TargetTileGroup);
 		PawnToMove->StartMoveToTileGroup();
+
+		UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement // Valid : TargetTileX = %s // TargetTileY = %s"),
+		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.PositionX),
+		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.PositionY)
+		);
 	}
-
-	/*UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement : ValidTargetTileGroup = "),
-	       *FString::FromInt(bIsValidTargetTileGroup)
-	);*/
-
+	
 	return TargetTileGroup.bIsValid;
 }
 
 void ASS_Grid::RegisterPawnToGrid(ASS_Pawn* PawnToRegister, const FSS_TileGroupData& TileGroup)
 {
+	UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RegisterPawnToGrid"));
+		
 	for (const auto& Tile : TileGroup.TileArray)
 	{
 		Tile->RegisterPawnBPI(PawnToRegister);
@@ -230,6 +230,8 @@ void ASS_Grid::RegisterPawnToGrid(ASS_Pawn* PawnToRegister, const FSS_TileGroupD
 
 void ASS_Grid::UnregisterPawnFromGrid(ASS_Pawn* PawnToUnregister)
 {
+	UE_LOG(LogTemp, Display, TEXT("ASS_Grid::UnregisterPawnFromGrid"));
+	
 	for (const auto& Tile : PawnToUnregister->TileGroup.TileArray)
 	{
 		Tile->UnregisterPawnBPI();
@@ -265,8 +267,7 @@ ASS_Tile* const ASS_Grid::GetTileFromCoords(int32 TileX, int32 TileY) const
 void ASS_Grid::GetTileGroup(
 	FSS_TileGroupData& GroupResult,
 	ASS_Tile* OriginTile,
-	int32 GroupSizeX,
-	int32 GroupSizeY,
+	int32 GroupSize,
 	const ASS_Pawn* PawnToIgnore)
 {
 	GroupResult.bIsValid = true;
@@ -281,9 +282,9 @@ void ASS_Grid::GetTileGroup(
 
 	GroupResult.OriginTile = OriginTile;
 
-	for (int32 XOffset = 0; XOffset > GroupSizeX * -1; XOffset--)
+	for (int32 XOffset = 0; XOffset < GroupSize; XOffset++)
 	{
-		for (int32 YOffset = 0; YOffset < GroupSizeY; YOffset++)
+		for (int32 YOffset = 0; YOffset < GroupSize; YOffset++)
 		{
 			ASS_Tile* TileToAdd = GetTileFromCoords(
 				OriginTile->TileData.PositionX + XOffset,

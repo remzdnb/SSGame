@@ -8,23 +8,60 @@ void USS_PawnAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	OwningPawn = Cast<ASS_Pawn>(TryGetPawnOwner());
-	CurrentState = ESS_PawnState::Idling;
+	if (OwningPawn)
+	{
+		Montage_Play(OwningPawn->PawnData.AnimMontage);
+		Montage_JumpToSection("Idle", OwningPawn->PawnData.AnimMontage);
+	}
+
+	LastAnimation = ESS_PawnAnimation::Idle;
 }
 
 void USS_PawnAnimInstance::NativeUpdateAnimation(float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
+}
 
-	if (OwningPawn == nullptr)
-		return;
-	
-	if (CurrentState != OwningPawn->State)
+void USS_PawnAnimInstance::PlayIdleAnimation()
+{
+	if (LastAnimation == ESS_PawnAnimation::Move)
 	{
-		if (OwningPawn->State == ESS_PawnState::Moving)
-			Montage_Play(OwningPawn->PawnData.AnimMontage);
-		else
-			Montage_Stop(0.0f);
-
-		CurrentState = OwningPawn->State;
+		Montage_JumpToSection("MoveStop", OwningPawn->PawnData.AnimMontage);
 	}
+	else if (LastAnimation != ESS_PawnAnimation::Idle)
+	{
+		
+	}
+	else
+	{
+		Montage_JumpToSection("Idle", OwningPawn->PawnData.AnimMontage);
+	}
+	
+	LastAnimation = ESS_PawnAnimation::Idle;
+}
+
+void USS_PawnAnimInstance::PlayMoveStartAnimation()
+{
+	if (LastAnimation != ESS_PawnAnimation::Move)
+		Montage_JumpToSection("MoveStart", OwningPawn->PawnData.AnimMontage);
+
+	LastAnimation = ESS_PawnAnimation::Move;
+}
+
+void USS_PawnAnimInstance::PlayMoveEndAnimation()
+{
+	LastAnimation = ESS_PawnAnimation::Idle;
+	Montage_JumpToSection("MoveStop", OwningPawn->PawnData.AnimMontage);
+}
+
+void USS_PawnAnimInstance::PlayAttackStartAnimation()
+{
+	LastAnimation = ESS_PawnAnimation::Attack;
+	Montage_JumpToSection("AttackStart", OwningPawn->PawnData.AnimMontage);
+}
+
+void USS_PawnAnimInstance::PlayAttackEndAnimation()
+{
+	LastAnimation = ESS_PawnAnimation::Attack;
+	Montage_JumpToSection("AttackEnd", OwningPawn->PawnData.AnimMontage);
 }

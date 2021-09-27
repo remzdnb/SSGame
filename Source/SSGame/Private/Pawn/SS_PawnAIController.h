@@ -32,6 +32,9 @@ protected:
 
 private:
 
+	UFUNCTION()
+	void StartNextAction();
+
 	UPROPERTY()
 	ASS_Grid* Grid;
 	

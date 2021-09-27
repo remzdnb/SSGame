@@ -23,6 +23,9 @@ protected:
 
 private:
 
+	UFUNCTION()
+	void OnHealthUpdated(float NewHealth, float NewMaxHealth);
+	
 	ASS_Pawn* PawnOwner;
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* StateText;

@@ -17,9 +17,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn")
 	TSubclassOf<APawn> PawnBP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn")
-	UCurveFloat* PawnMovementCurveFloat;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn")
 	UMaterialInterface* DemoPawnMaterial_Valid;
@@ -49,6 +46,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
 	TSubclassOf<AActor> PostProcess_BP;
+
+	//
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	TSubclassOf<class AAIController> AIControllerClass;
 	
 	//
 
@@ -63,11 +65,17 @@ public:
 
 	//
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
-	TSubclassOf<class AAIController> AIControllerClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Misc")
+	UCurveFloat* LinearCurveFloat;
 
 	//
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Debug")
 	bool bDebugGrid = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Debug")
+	bool bDebugPawn = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Debug")
+	bool bDebugProjectile = false;
 };

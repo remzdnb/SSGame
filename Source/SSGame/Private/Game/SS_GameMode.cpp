@@ -1,4 +1,6 @@
 #include "Game/SS_GameMode.h"
+
+#include "SS_GameSettings.h"
 #include "Game/SS_GameState.h"
 #include "Game/SS_GameInstance.h"
 #include "Player/SS_PlayerController.h"
@@ -19,4 +21,9 @@ void ASS_GameMode::PostInitializeComponents()
 	Super::PostInitializeComponents();
 
 	GInstance = Cast<USS_GameInstance>(GetGameInstance());
+}
+
+void ASS_GameMode::BeginPlay()
+{
+	Super::BeginPlay();
 }

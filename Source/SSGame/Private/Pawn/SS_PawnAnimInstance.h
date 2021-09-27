@@ -17,6 +17,23 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
+	//
+
+	UFUNCTION()
+	void PlayIdleAnimation();
+
+	UFUNCTION()
+	void PlayMoveStartAnimation();
+
+	UFUNCTION()
+	void PlayMoveEndAnimation();
+
+	UFUNCTION()
+	void PlayAttackStartAnimation();
+
+	UFUNCTION()
+	void PlayAttackEndAnimation();
+
 private:
 
 	USS_GameInstance* GInstance;
@@ -24,5 +41,5 @@ private:
 
 	//
 
-	ESS_PawnState CurrentState;
+	ESS_PawnAnimation LastAnimation;
 };
