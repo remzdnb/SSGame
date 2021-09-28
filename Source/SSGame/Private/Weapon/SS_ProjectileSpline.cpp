@@ -1,10 +1,12 @@
 #include "Weapon/SS_ProjectileSpline.h"
 #include "Weapon/SS_Projectile.h"
+#include "Pawn/SS_Pawn.h"
 #include "Game/SS_GameInstance.h"
 #include "Game/SS_GameSettings.h"
 //
 #include "Components/SplineComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ASS_ProjectileSpline::ASS_ProjectileSpline()
 {
@@ -17,10 +19,14 @@ ASS_ProjectileSpline::ASS_ProjectileSpline()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void ASS_ProjectileSpline::Init(const FSS_PawnData& NewOwningPawnData, AActor* NewTargetActor)
+void ASS_ProjectileSpline::Init(const FSS_PawnData& NewOwningPawnData, class ASS_Pawn* NewTargetPawn, class ASS_Projectile* LoadedProjectile)
 {
 	OwningPawnData = NewOwningPawnData;
-	TargetActor = NewTargetActor;
+	TargetPawn = NewTargetPawn;
+	Projectile = LoadedProjectile;
+
+	Projectile->Init(this, NewTargetPawn);
+	Projectile->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 }
 
 void ASS_ProjectileSpline::BeginPlay()
@@ -29,22 +35,45 @@ void ASS_ProjectileSpline::BeginPlay()
 
 	GInstance = Cast<USS_GameInstance>(GetGameInstance());
 
-	// Setup spline.
-	
-	FSplinePoint EndSplinePoint;
-	EndSplinePoint.InputKey = 2;
-	SplineCT->AddPoint(EndSplinePoint, true);
+	// Setup first spline point.
 
 	SplineCT->SetLocationAtSplinePoint(
-		1,
-		FVector(GetActorLocation().X, GetActorLocation().Y, 800.0f),
+		0,
+		Projectile->GetActorLocation(),
 		ESplineCoordinateSpace::World,
 		true
 	);
 
+	// Setup mid-air spline point.
+
+	const FVector DirectionToTarget = UKismetMathLibrary::FindLookAtRotation(
+		GetOwner()->GetActorLocation(),
+		TargetPawn->GetActorLocation()
+	).Vector();
+	const float DistanceToTarget = FVector::Dist(GetOwner()->GetActorLocation(), TargetPawn->GetActorLocation());
+	const FVector EquidistantLocationToTarget = GetActorLocation() + DirectionToTarget * DistanceToTarget / 2;
+	const FVector MidAirSplinePointLocation = FVector(
+		EquidistantLocationToTarget.X,
+		EquidistantLocationToTarget.Y,
+		500.0f
+	);
+	
+	SplineCT->SetLocationAtSplinePoint(
+		1,
+		MidAirSplinePointLocation,
+		ESplineCoordinateSpace::World,
+		true
+	);
+
+	// Setup target spline point.
+	
+	FSplinePoint TargetSplinePoint;
+	TargetSplinePoint.InputKey = 2;
+	SplineCT->AddPoint(TargetSplinePoint, true);
+
 	// Spawn & setup projectile.
 
-	Projectile = GetWorld()->SpawnActorDeferred<ASS_Projectile>(
+	/*Projectile = GetWorld()->SpawnActorDeferred<ASS_Projectile>(
 		OwningPawnData.ProjectileClass,
 		FTransform::Identity,
 		this,
@@ -54,7 +83,7 @@ void ASS_ProjectileSpline::BeginPlay()
 	if (Projectile)
 	{
 		UGameplayStatics::FinishSpawningActor(Projectile, FTransform::Identity);
-	}
+	}*/
 
 	// Setup timeline.
 
@@ -82,9 +111,9 @@ void ASS_ProjectileSpline::Tick(float DeltaTime)
 
 	ProjectileTimeline.TickTimeline(DeltaTime);
 
-	if (TargetActor.IsValid())
+	if (TargetPawn.IsValid())
 	{
-		SplineCT->SetLocationAtSplinePoint(2, TargetActor->GetActorLocation(), ESplineCoordinateSpace::World, true);
+		SplineCT->SetLocationAtSplinePoint(2, TargetPawn->GetMesh()->GetSocketLocation("TargetSocket"), ESplineCoordinateSpace::World, true);
 	}
 }
 
@@ -104,7 +133,15 @@ void ASS_ProjectileSpline::OnProjectileTimelineProgress(float NewProgressValue)
 
 void ASS_ProjectileSpline::OnProjectileTimelineEnd()
 {
-	Projectile->Destroy();
+	if (TargetPawn.IsValid())
+	{
+		TargetPawn->ReceiveDamage(OwningPawnData.RangedAttackDamage, Projectile);
+	}
+	else
+	{
+		Projectile->Destroy();
+	}
+
 	this->Destroy();
 }
 

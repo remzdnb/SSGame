@@ -23,16 +23,22 @@ public:
 	void PlayIdleAnimation();
 
 	UFUNCTION()
-	void PlayMoveStartAnimation();
+	void PlayMoveAnimation();
 
 	UFUNCTION()
-	void PlayMoveEndAnimation();
+	void PlayDeathAnimation();
 
 	UFUNCTION()
-	void PlayAttackStartAnimation();
+	void PlayMeleeAttackStartAnimation();
 
 	UFUNCTION()
-	void PlayAttackEndAnimation();
+	void PlayMeleeAttackStopAnimation();
+
+	UFUNCTION()
+	void PlayRangedAttackStartAnimation();
+
+	UFUNCTION()
+	void PlayRangedAttackStopAnimation();
 
 private:
 
@@ -41,5 +47,5 @@ private:
 
 	//
 
-	ESS_PawnAnimation LastAnimation;
+	ESS_PawnState LastAnimation;
 };

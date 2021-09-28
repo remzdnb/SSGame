@@ -10,11 +10,17 @@ void USS_PawnAnimInstance::NativeInitializeAnimation()
 	OwningPawn = Cast<ASS_Pawn>(TryGetPawnOwner());
 	if (OwningPawn)
 	{
-		Montage_Play(OwningPawn->PawnData.AnimMontage);
-		Montage_JumpToSection("Idle", OwningPawn->PawnData.AnimMontage);
+		PlaySlotAnimationAsDynamicMontage(
+			OwningPawn->PawnData.IdleAnimSequence,
+			"DefaultSlot",
+			0.0f,
+			0.0f,
+			1.0f,
+			1
+		);
 	}
-
-	LastAnimation = ESS_PawnAnimation::Idle;
+	
+	LastAnimation = ESS_PawnState::Idle;
 }
 
 void USS_PawnAnimInstance::NativeUpdateAnimation(float DeltaTime)
@@ -24,44 +30,125 @@ void USS_PawnAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 void USS_PawnAnimInstance::PlayIdleAnimation()
 {
-	if (LastAnimation == ESS_PawnAnimation::Move)
-	{
-		Montage_JumpToSection("MoveStop", OwningPawn->PawnData.AnimMontage);
-	}
-	else if (LastAnimation != ESS_PawnAnimation::Idle)
-	{
-		
-	}
-	else
-	{
-		Montage_JumpToSection("Idle", OwningPawn->PawnData.AnimMontage);
-	}
+	if (OwningPawn->PawnData.IdleAnimSequence == nullptr)
+		return;
 	
-	LastAnimation = ESS_PawnAnimation::Idle;
+	if (LastAnimation == ESS_PawnState::Idle)
+		return;
+	
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.IdleAnimSequence,
+		"DefaultSlot",
+		0.1f,
+		0.1f,
+		1.0f,
+		99999999
+	);
+
+	LastAnimation = ESS_PawnState::Idle;
 }
 
-void USS_PawnAnimInstance::PlayMoveStartAnimation()
+void USS_PawnAnimInstance::PlayMoveAnimation()
 {
-	if (LastAnimation != ESS_PawnAnimation::Move)
-		Montage_JumpToSection("MoveStart", OwningPawn->PawnData.AnimMontage);
+	if (OwningPawn->PawnData.MoveAnimSequence == nullptr)
+		return;
+		
+	if (LastAnimation == ESS_PawnState::Move)
+		return;
 
-	LastAnimation = ESS_PawnAnimation::Move;
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.MoveAnimSequence,
+		"DefaultSlot",
+		0.1f,
+		0.1f,
+		1.0f,
+		99999999
+	);
+	
+	LastAnimation = ESS_PawnState::Move;
 }
 
-void USS_PawnAnimInstance::PlayMoveEndAnimation()
+void USS_PawnAnimInstance::PlayDeathAnimation()
 {
-	LastAnimation = ESS_PawnAnimation::Idle;
-	Montage_JumpToSection("MoveStop", OwningPawn->PawnData.AnimMontage);
+	if (OwningPawn->PawnData.DeathAnimSequence == nullptr)
+		return;
+
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.DeathAnimSequence,
+		"DefaultSlot",
+		0.1f,
+		0.1f,
+		1.0f,
+		1
+	);
+	
+	LastAnimation = ESS_PawnState::Dead;
 }
 
-void USS_PawnAnimInstance::PlayAttackStartAnimation()
+void USS_PawnAnimInstance::PlayMeleeAttackStartAnimation()
 {
-	LastAnimation = ESS_PawnAnimation::Attack;
-	Montage_JumpToSection("AttackStart", OwningPawn->PawnData.AnimMontage);
+	if (OwningPawn->PawnData.MeleeAttackStartAnimSequence == nullptr)
+		return;
+	
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.MeleeAttackStartAnimSequence,
+		"DefaultSlot",
+		0.0f,
+		0.0f,
+		OwningPawn->PawnData.MeleeAttackStartAnimSequence->SequenceLength / OwningPawn->PawnData.MeleeAttackStartDelay,
+		1
+	);
+	
+	LastAnimation = ESS_PawnState::MeleeAttackStart;
 }
 
-void USS_PawnAnimInstance::PlayAttackEndAnimation()
+void USS_PawnAnimInstance::PlayMeleeAttackStopAnimation()
 {
-	LastAnimation = ESS_PawnAnimation::Attack;
-	Montage_JumpToSection("AttackEnd", OwningPawn->PawnData.AnimMontage);
+	if (OwningPawn->PawnData.MeleeAttackStopAnimSequence == nullptr)
+		return;
+	
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.MeleeAttackStopAnimSequence,
+		"DefaultSlot",
+		0.0f,
+		0.0f,
+		OwningPawn->PawnData.MeleeAttackStopAnimSequence->SequenceLength / OwningPawn->PawnData.MeleeAttackStopDelay,
+		1
+	);
+
+	LastAnimation = ESS_PawnState::MeleeAttackStop;
+}
+
+void USS_PawnAnimInstance::PlayRangedAttackStartAnimation()
+{
+	if (OwningPawn->PawnData.RangedAttackStartAnimSequence == nullptr)
+		return;
+	
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.RangedAttackStartAnimSequence,
+		"DefaultSlot",
+		0.0f,
+		0.0f,
+		OwningPawn->PawnData.RangedAttackStartAnimSequence->SequenceLength / OwningPawn->PawnData.MeleeAttackStartDelay,
+		1
+	);
+
+	LastAnimation = ESS_PawnState::RangedAttackStart;
+}
+
+void USS_PawnAnimInstance::PlayRangedAttackStopAnimation()
+{
+	if (OwningPawn->PawnData.RangedAttackStopAnimSequence == nullptr)
+		return;
+
+	PlaySlotAnimationAsDynamicMontage(
+		OwningPawn->PawnData.RangedAttackStopAnimSequence,
+		"DefaultSlot",
+		0.0f,
+		0.0f,
+		OwningPawn->PawnData.RangedAttackStopAnimSequence->SequenceLength / OwningPawn->PawnData.MeleeAttackStartDelay,
+		1
+	);
+
+	LastAnimation = ESS_PawnState::RangedAttackStop;
 }

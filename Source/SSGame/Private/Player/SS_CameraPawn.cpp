@@ -22,7 +22,6 @@ ASS_CameraPawn::ASS_CameraPawn()
 	//
 
 	bIsRotationEnabled = false;
-	TargetArmLength = 1000.0f;
 	SpringArmCT->SetWorldRotation(FRotator(CPSettings.DefaultPitch, 0.0f, 0.0f));
 	TargetArmRotation = FRotator(CPSettings.DefaultPitch, 0.0f, 0.0f);
 }
@@ -30,6 +29,8 @@ ASS_CameraPawn::ASS_CameraPawn()
 void ASS_CameraPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	TargetArmLength = SpringArmCT->TargetArmLength;
 }
 
 void ASS_CameraPawn::Tick(float DeltaTime)

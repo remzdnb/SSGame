@@ -12,11 +12,15 @@ class ASS_Projectile : public AActor
 public:
 	
 	ASS_Projectile();
+
+	UFUNCTION()
+	void Init(class ASS_ProjectileSpline* NewOwningProjectileSpline, class ASS_Pawn* NewTargetPawn);
 	
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 private:
+
+	// Scene components
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class USceneComponent* RootCT;
@@ -24,7 +28,15 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* MeshCT;
 
+	// References
+
+	TWeakObjectPtr<class ASS_ProjectileSpline> OwningProjectileSpline;
+	TWeakObjectPtr<class ASS_Pawn> TargetPawn;
+	
 	//
 
-	TWeakObjectPtr<AActor> TargetActor;
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+	                    const FHitResult& SweepResult);
 };

@@ -23,17 +23,22 @@ void USS_MainHUDWidget::NativeOnInitialized()
 void USS_MainHUDWidget::UpdateCharacterSelectionPanel()
 {
 	CharacterSelectionPanel->ClearChildren();
-	
-	for (const auto& CharacterRowName : GInstance->PawnDT->GetRowNames())
+
+	for (const auto& PawnDataRowName : GInstance->PawnDT->GetRowNames())
 	{
-		USS_CharacterSelectionItemWidget* const CharacterSelectionItemWidget = CreateWidget<USS_CharacterSelectionItemWidget>(
-			GetWorld(),
-			GInstance->GameSettings->CharacterSelectionItem_WBP
-		);
-		if (CharacterSelectionItemWidget)
+		const FSS_PawnData* const PawnData = GInstance->GetPawnDataFromRow(PawnDataRowName);
+		if (PawnData->bIsSpawnable)
 		{
-			CharacterSelectionItemWidget->Update(CharacterRowName);
-			CharacterSelectionPanel->AddChild(CharacterSelectionItemWidget);
+			USS_CharacterSelectionItemWidget* const CharacterSelectionItemWidget = CreateWidget<
+				USS_CharacterSelectionItemWidget>(
+				GetWorld(),
+				GInstance->GameSettings->CharacterSelectionItem_WBP
+			);
+			if (CharacterSelectionItemWidget)
+			{
+				CharacterSelectionItemWidget->Update(PawnDataRowName);
+				CharacterSelectionPanel->AddChild(CharacterSelectionItemWidget);
+			}
 		}
 	}
 }

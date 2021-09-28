@@ -15,7 +15,7 @@ public:
 	ASS_ProjectileSpline();
 	
 	UFUNCTION()
-	void Init(const FSS_PawnData& NewOwningPawnData, AActor* NewTargetActor);
+	void Init(const FSS_PawnData& NewOwningPawnData, class ASS_Pawn* NewTargetPawn, class ASS_Projectile* LoadedProjectile);
 	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -37,7 +37,7 @@ private:
 	// References
 	
 	class USS_GameInstance* GInstance;
-	TWeakObjectPtr<AActor> TargetActor;
+	TWeakObjectPtr<class ASS_Pawn> TargetPawn;
 
 	///// Projectile
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////

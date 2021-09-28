@@ -26,46 +26,33 @@ public:
 		bool bIsDemoPawn = false,
 		bool bIsDemoPawnValidLocation = false
 	);
-
-	// AActor
 	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	
-	///// ASS_Pawn
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-public:
-
-	UFUNCTION()
-	void SetNewState(ESS_PawnState NewState);
-	
-	//
-
-	UFUNCTION() class USkeletalMeshComponent* GetMesh() const { return MeshCT; }
-	
-	//
-
-	FOnPawnActionCompletedDelegate OnPawnActionCompletedEvent;
-	FOnPawnStateUpdatedDelegate OnPawnStateUpdatedEvent;
-
-	UPROPERTY()
-	FSS_PawnData PawnData;
-
-	UPROPERTY()
-	ESS_Team Team;
-
-	UPROPERTY()
-	FVector MeshRelativeLocation;
-
-	UPROPERTY()
-	ESS_PawnState State;
 
 private:
 
 	UFUNCTION()
 	void Debug(float DeltaTime);
 
+	///// ASS_Pawn
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+public:
+
+	FOnPawnActionCompletedDelegate OnPawnActionCompletedEvent;
+	FOnPawnStateUpdatedDelegate OnPawnStateUpdatedEvent;
+
+	UPROPERTY() FSS_PawnData PawnData;
+	UPROPERTY() ESS_Team Team;
+	UPROPERTY() ESS_PawnState State;
+	
+	//
+
+	UFUNCTION() class USkeletalMeshComponent* GetMesh() const { return MeshCT; }
+
+private:
+	
 	// Scene Components
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -84,10 +71,13 @@ private:
 	class USkeletalMeshComponent* RangedWeaponMeshCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UBoxComponent* CollisionBoxCT;
+	class UBoxComponent* CollisionCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UBoxComponent* DetectionBoxCT;
+	class USphereComponent* MeleeDetectionCT;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class USphereComponent* RangedDetectionCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OTMWidgetCT;
@@ -105,13 +95,10 @@ private:
 public:
 
 	UFUNCTION()
+	void StartNewMove(ESS_PawnMoveType NewMoveType);
+	
+	UFUNCTION()
 	void StartMoveToTileGroup();
-
-	UFUNCTION()
-	void MoveTimelineProgress(float Value);
-
-	UFUNCTION()
-	void MoveTimelineEnd();
 
 	//
 
@@ -140,33 +127,53 @@ private:
 
 	UPROPERTY()
 	float MoveDistance;
+
+	//
+
+	UFUNCTION()
+	void MoveTimelineProgress(float Value);
+
+	UFUNCTION()
+	void MoveTimelineEnd();
 	
 	///// Combat
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 public:
-
-	UFUNCTION()
-	void StartNewAttack(ASS_Pawn* NewTargetPawn);
-
-	UFUNCTION()
-	void ReceiveDamage(float Damage);
 	
+	FOnPawnHealthUpdatedDelegate OnPawnHealthUpdatedEvent;
+
+	TArray<TWeakObjectPtr<ASS_Pawn>> MeleeDetectedPawns;
+	TArray<TWeakObjectPtr<ASS_Pawn>> RangedDetectedPawns;
+
 	//
 
-	FOnPawnHealthUpdatedDelegate OnPawnHealthUpdatedEvent;
-	
-	TArray<TWeakObjectPtr<ASS_Pawn>> DetectedPawns;
+	UFUNCTION()
+	bool StartNewAttack();
+
+	UFUNCTION()
+	void ReceiveDamage(float Damage, class ASS_Projectile* Projectile = nullptr);
 
 private:
 
-	UFUNCTION()
-	void OnDetectionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	TWeakObjectPtr<ASS_Pawn> TargetPawn;
+
+	UPROPERTY()
+	TArray<class ASS_Projectile*> AttachedProjectiles;
+	
+	UPROPERTY() UCurveFloat* AttackCurve;
+	UPROPERTY() FTimeline AttackTimeline;
+	UPROPERTY() float AttackTimelineProgressValue;
+	UPROPERTY() class ASS_Projectile* LoadedProjectile;
+	UPROPERTY() float Health;
+
+	//
 
 	UFUNCTION()
-	void OnDetectionBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void StartNewMeleeAttack();
+
+	UFUNCTION()
+	void StartNewRangedAttack();
 
 	UFUNCTION()
 	void OnAttackTimelineEnd();
@@ -179,23 +186,22 @@ private:
 	
 	UFUNCTION()
 	void Die();
-
-	//
 	
-	TWeakObjectPtr<ASS_Pawn> TargetPawn;
+	UFUNCTION()
+	void OnMeleeDetectionShereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+	                                       const FHitResult& SweepResult);
 
-	UPROPERTY()
-	UCurveFloat* AttackCurve;
+	UFUNCTION()
+	void OnMeleeDetectionSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	UPROPERTY()
-	FTimeline AttackTimeline;
+	UFUNCTION()
+	void OnRangedDetectionShereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+	                                        const FHitResult& SweepResult);
 
-	UPROPERTY()
-	float AttackTimelineProgressValue;
-
-	UPROPERTY()
-	TArray<class ASS_Projectile*> ProjectileArray;
-
-	UPROPERTY()
-	float Health;
+	UFUNCTION()
+	void OnRangedDetectionSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 };

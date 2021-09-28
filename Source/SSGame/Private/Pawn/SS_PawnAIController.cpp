@@ -35,8 +35,8 @@ void ASS_PawnAIController::Tick(float DeltaTime)
 
 	if (ControlledPawn == nullptr || Grid == nullptr)
 		return;
-	
-	if (ControlledPawn->State == ESS_PawnState::Idling)
+
+	if (ControlledPawn->State == ESS_PawnState::Idle)
 	{
 		StartNextAction();
 	}
@@ -51,7 +51,7 @@ void ASS_PawnAIController::OnPossess(APawn* InPawn)
 	{
 		if (ControlledPawn->State == ESS_PawnState::Demo)
 			return;
-		
+
 		ControlledPawn->OnPawnActionCompletedEvent.AddUniqueDynamic(this, &ASS_PawnAIController::StartNextAction);
 		StartNextAction();
 	}
@@ -59,25 +59,15 @@ void ASS_PawnAIController::OnPossess(APawn* InPawn)
 
 void ASS_PawnAIController::StartNextAction()
 {
-	if (ControlledPawn->DetectedPawns.Num() != 0)
-	{
-		UE_LOG(LogTemp, Display, TEXT("ASS_PawnAIController::StartNextAction : Attack"));
-		
-		ControlledPawn->StartNewAttack(ControlledPawn->DetectedPawns[0].Get());
-		ControlledPawn->SetNewState(ESS_PawnState::Attacking);
-	}
-	else
+	if (ControlledPawn->StartNewAttack() == false)
 	{
 		if (bWantsToMove && Grid->RequestPawnMovement(ControlledPawn))
 		{
-			UE_LOG(LogTemp, Display, TEXT("ASS_PawnAIController::StartNextAction : Move"));
-			ControlledPawn->SetNewState(ESS_PawnState::Moving);
+			ControlledPawn->StartNewMove(ESS_PawnMoveType::Move);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Display, TEXT("ASS_PawnAIController::StartNextAction : Idle"));
-			ControlledPawn->SetNewState(ESS_PawnState::Idling);
+			ControlledPawn->StartNewMove(ESS_PawnMoveType::Idle);
 		}
 	}
 }
-

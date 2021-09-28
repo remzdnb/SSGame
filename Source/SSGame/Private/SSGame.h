@@ -44,17 +44,27 @@ UENUM(BlueprintType)
 enum class ESS_PawnState : uint8
 {
 	Demo,
-	Idling,
-	Moving,
-	Attacking
+	Idle,
+	Move,
+	MeleeAttackStart,
+	MeleeAttackStop,
+	RangedAttackStart,
+	RangedAttackStop,
+	Dead
 };
 
 UENUM(BlueprintType)
-enum class ESS_PawnAnimation : uint8
+enum class ESS_PawnMoveType : uint8
 {
 	Idle,
-	Move,
-	Attack
+	Move
+};
+
+UENUM(BlueprintType)
+enum class ESS_PawnAttackType : uint8
+{
+	Melee,
+	Ranged
 };
 
 USTRUCT(BlueprintType)
@@ -117,67 +127,120 @@ struct FSS_PawnData : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FName DisplayName;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General")
 	TSubclassOf<class ASS_Pawn> Class;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	class USkeletalMesh* MeshTemplate;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General")
+	FName DisplayName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General")
+	bool bIsSpawnable;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General")
 	FVector MeshScale;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	bool bIsMeshFacingXAxis;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	uint8 Size;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	float MoveSpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	float MaxHealth;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	ESS_PawnAttackType PrimaryAttackType;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat_Ranged")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Melee")
+	bool HasMeleeAttack;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Melee")
+	int32 MeleeAttackRange;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Melee")
+	float MeleeAttackStartDelay;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Melee")
+	float MeleeAttackStopDelay;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Melee")
+	float MeleeAttackDamage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
 	bool HasRangedAttack;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat_Ranged")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
+	int32 RangedAttackRange;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
+	float RangedAttackStartDelay;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
+	float RangedAttackStopDelay;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
+	float RangedAttackDamage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
 	TSubclassOf<class ASS_Projectile> ProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat_Ranged")
-	TSubclassOf<class ASS_Projectile> ProjectileSpeed;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat/Ranged")
+	float ProjectileSpeed;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	float AttackDamage;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	float AttackSpeed;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* IdleAnimSequence;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 AttackRange;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	UAnimMontage* AnimMontage;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* MoveAnimSequence;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* DeathAnimSequence;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* MeleeAttackStartAnimSequence;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* MeleeAttackStopAnimSequence;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* RangedAttackStartAnimSequence;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimSequence* RangedAttackStopAnimSequence;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FX")
 	UParticleSystem* HitParticle;
 	
 	FSS_PawnData()
 	{
 		DisplayName = "DefaultName";
-		MeshTemplate = nullptr;
+		bIsSpawnable = true;
 		bIsMeshFacingXAxis = false;
 		Size = 1;
 		MoveSpeed = 100.0f;
 		MaxHealth = 1000.0f;
-		HasRangedAttack = false;
-		AttackDamage = 100.0f;
-		AttackSpeed = 0.1f;
-		AttackRange = 1;
-		AnimMontage = nullptr;
+		PrimaryAttackType = ESS_PawnAttackType::Melee;
+		HasMeleeAttack = true;
+		MeleeAttackRange = 1;
+		MeleeAttackStartDelay = 1.0f;
+		MeleeAttackStopDelay = 1.0f;
+		MeleeAttackDamage = 100.0f;
+		HasRangedAttack = true;
+		RangedAttackRange = 1;
+		RangedAttackStartDelay = 1.0f;
+		RangedAttackStopDelay = 1.0f;
+		RangedAttackDamage = 100.0f;
+		ProjectileSpeed = 10.0f;
+		IdleAnimSequence = nullptr;
+		MoveAnimSequence = nullptr;
+		DeathAnimSequence = nullptr;
+		MeleeAttackStartAnimSequence = nullptr;
+		MeleeAttackStopAnimSequence = nullptr;
+		RangedAttackStartAnimSequence = nullptr;
+		RangedAttackStopAnimSequence = nullptr;
 		HitParticle = nullptr;
 	}
 };
