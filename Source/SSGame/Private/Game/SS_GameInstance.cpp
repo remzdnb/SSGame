@@ -1,4 +1,5 @@
 #include "Game/SS_GameInstance.h"
+#include "World/SS_Grid.h"
 //
 #include "EngineUtils.h"
 
@@ -15,6 +16,11 @@ void USS_GameInstance::OnStart()
 void USS_GameInstance::Init()
 {
 	Super::Init();
+
+	for (TActorIterator<ASS_Grid> FoundGrid(GetWorld()); FoundGrid; ++FoundGrid)
+	{
+		Grid = *FoundGrid;
+	}
 }
 
 const FSS_PawnData* const USS_GameInstance::GetPawnDataFromRow(const FName& RowName) const

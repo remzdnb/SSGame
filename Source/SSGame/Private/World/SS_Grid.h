@@ -4,7 +4,6 @@
 #include "GameFramework/Actor.h"
 #include "SS_Grid.generated.h"
 
-class USS_GameInstance;
 class ASS_Tile;
 class ASS_Pawn;
 class UArrowComponent;
@@ -17,39 +16,24 @@ class ASS_Grid : public AActor
 public:
 	
 	ASS_Grid();
-
-	// Actor
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-private:
-	
-	// References
+	//
 
-	USS_GameInstance* GInstance;
-
-	///// Scene Components
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-public:
-	
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
 	UArrowComponent* DirectionArrowCT;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
+	UDataTable* GameAIPresetDT;
+
+private:
+
+	class USS_GameInstance* GInstance;
 
 	///// Tiles
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-public:
-
-	UFUNCTION()
-	void OnTileHoverBegin(ASS_Tile* HoveredTile, const FName& SelectedPawnRowName);
-
-	UFUNCTION()
-	void OnTileHoverEnd();
-
-	UFUNCTION()
-	void OnTileClicked(ASS_Tile* const ClickedTile, const FName& SelectedPawnRowName);
 
 private:
 
@@ -79,7 +63,7 @@ private:
 public:
 
 	UFUNCTION()
-	void SpawnPawn(
+	class ASS_Pawn* SpawnPawn(
 		const FSS_TileGroupData& TileGroup,
 		const FName& PawnDataRowName,
 		bool bIsDemoPawn = false
@@ -99,28 +83,42 @@ private:
 	UPROPERTY()
 	TArray<ASS_Pawn*> PawnArray;
 
-	UPROPERTY()
-	ASS_Pawn* DemoPawn;
-
-	UPROPERTY()
-	FSS_TileGroupData DemoPawnTileGroup;
-
-	///// Tools
+	///// Helpers
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 public:
 
 	UFUNCTION()
-	ASS_Tile* const GetTileFromCoords(int32 TileX, int32 TileY) const;
+	ASS_Tile* GetTileFromPosition(int32 XPosition, int32 YPosition) const;
 
 	UFUNCTION()
-	void GetTileGroup(
-		FSS_TileGroupData& GroupResult,
-		ASS_Tile* OriginTile,
-		int32 GroupSize,
-		const ASS_Pawn* PawnToIgnore = nullptr
-	);
+	ASS_Tile* GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team) const;
+
+	UFUNCTION()
+	TArray<ASS_Tile*> GetTilesFromSquare(const ASS_Tile* FirstCornerTile, const ASS_Tile* SecondCornerTile) const;
 	
 	UFUNCTION()
-	ASS_Tile* GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team);
+	void GetTileGroup(FSS_TileGroupData& GroupResult, ASS_Tile* OriginTile, int32 GroupSize,
+	                  const ASS_Pawn* PawnToIgnore = nullptr);
+
+	UFUNCTION()
+	void GetSpawnTileGroupFromTile(FSS_TileGroupData& GroupResult, ASS_Tile* OriginTile, int32 GroupSize,
+	                               ESS_Team Team);
+
+	UFUNCTION()
+	void GetValidTileGroupsFromSquare(TArray<FSS_TileGroupData>& GroupsResult, TArray<ASS_Tile*> SquareTiles,
+	                                  int32 GroupSize); // from array ?
+
+
+	UFUNCTION()
+	void DebugTileGroup(const FSS_TileGroupData& TileGroup);
+	
+	///// Rendering
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	UFUNCTION()
+	void HighlightLine(int32 PositionY, bool bActivate);
+
+	UFUNCTION()
+	void DisableAllHighlight();
 };

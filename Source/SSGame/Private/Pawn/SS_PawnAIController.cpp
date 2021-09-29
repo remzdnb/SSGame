@@ -11,7 +11,7 @@ ASS_PawnAIController::ASS_PawnAIController()
 
 	//
 
-	bWantsToMove = true;
+	bWantsToMove = false;
 }
 
 void ASS_PawnAIController::PostInitializeComponents()

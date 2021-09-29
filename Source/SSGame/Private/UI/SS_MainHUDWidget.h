@@ -13,6 +13,11 @@ public:
 
 	virtual void NativeOnInitialized() override;
 
+	//
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void TogglePawnSelectionPanelBPI(bool bNewIsVisible);
+
 private:
 
 	UFUNCTION()

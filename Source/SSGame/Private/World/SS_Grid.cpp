@@ -45,13 +45,13 @@ void ASS_Grid::SpawnTiles()
 
 	// Spawn new layout.
 
-	for (int32 XIndex = 0; XIndex < GridSizeX; XIndex++)
+	for (int32 XPosition = 0; XPosition < GridSizeX; XPosition++)
 	{
-		for (int32 YIndex = 0; YIndex < GridSizeY; YIndex++)
+		for (int32 YPosition = 0; YPosition < GridSizeY; YPosition++)
 		{
 			const FVector SpawnLocation = FVector(
-				GetActorLocation().X + XIndex * TILESIZE,
-				GetActorLocation().Y + YIndex * TILESIZE,
+				GetActorLocation().X + XPosition * TILESIZE,
+				GetActorLocation().Y + YPosition * TILESIZE,
 				GetActorLocation().Z
 			);
 			const FTransform SpawnTransform = FTransform(GetActorRotation(), SpawnLocation, FVector(1.0f));
@@ -64,19 +64,17 @@ void ASS_Grid::SpawnTiles()
 			);
 			if (NewTile)
 			{
-				NewTile->TileData.PositionX = XIndex;
-				NewTile->TileData.PositionY = YIndex;
-				if (XIndex < BaseSize)
+				NewTile->TileData.XPosition = XPosition;
+				NewTile->TileData.YPosition = YPosition;
+				if (XPosition < BaseSize)
 				{
 					NewTile->TileData.Type = ESS_TileType::Spawn;
 					NewTile->TileData.Team = ESS_Team::South;
-					NewTile->TileData.DefaultSpawnRotationYaw = GetActorRotation().Yaw;
 				}
-				else if (XIndex >= GridSizeX - BaseSize)
+				else if (XPosition >= GridSizeX - BaseSize)
 				{
 					NewTile->TileData.Type = ESS_TileType::Spawn;
 					NewTile->TileData.Team = ESS_Team::North;
-					NewTile->TileData.DefaultSpawnRotationYaw = GetActorRotation().Yaw + 180.0f;
 				}
 				else
 				{
@@ -91,36 +89,7 @@ void ASS_Grid::SpawnTiles()
 	}
 }
 
-void ASS_Grid::OnTileHoverBegin(ASS_Tile* HoveredTile, const FName& SelectedPawnRowName)
-{
-	if (HoveredTile == nullptr)
-		return;
-	
-	const FSS_PawnData* PawnData = GInstance->GetPawnDataFromRow(SelectedPawnRowName);
-	if (PawnData)
-	{
-		GetTileGroup(DemoPawnTileGroup, HoveredTile, PawnData->Size);
-		SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, true);
-	}
-}
-
-void ASS_Grid::OnTileHoverEnd()
-{
-	if (DemoPawn)
-	{
-		DemoPawn->Destroy();
-	}
-}
-
-void ASS_Grid::OnTileClicked(ASS_Tile* const ClickedTile, const FName& SelectedPawnRowName)
-{
-	if (DemoPawnTileGroup.bIsValid && DemoPawnTileGroup.bIsInSpawn)
-	{
-		SpawnPawn(DemoPawnTileGroup, SelectedPawnRowName, false);
-	}
-}
-
-void ASS_Grid::SpawnPawn(
+ASS_Pawn* ASS_Grid::SpawnPawn(
 	const FSS_TileGroupData& TileGroup,
 	const FName& PawnDataRowName,
 	bool bIsDemoPawn
@@ -128,7 +97,7 @@ void ASS_Grid::SpawnPawn(
 {
 	const FSS_PawnData* const PawnData = GInstance->GetPawnDataFromRow(PawnDataRowName);
 	if (PawnData == nullptr)
-		return;
+		return nullptr;
 	
 	//
 	
@@ -173,11 +142,7 @@ void ASS_Grid::SpawnPawn(
 			bIsValidDemoPawn
 		);
 
-		if (bIsDemoPawn)
-		{
-			DemoPawn = NewPawn;
-		}
-		else
+		if (bIsDemoPawn == false)
 		{
 			RegisterPawnToGrid(NewPawn, TileGroup);
 			PawnArray.Add(NewPawn);
@@ -185,6 +150,8 @@ void ASS_Grid::SpawnPawn(
 		
 		UGameplayStatics::FinishSpawningActor(NewPawn, SpawnTransform);
 	}
+
+	return NewPawn;
 }
 
 bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
@@ -206,10 +173,10 @@ bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
 		RegisterPawnToGrid(PawnToMove, TargetTileGroup);
 		PawnToMove->StartMoveToTileGroup();
 
-		UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement // Valid : TargetTileX = %s // TargetTileY = %s"),
-		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.PositionX),
-		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.PositionY)
-		);
+		/*UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement // Valid : TargetTileX = %s // TargetTileY = %s"),
+		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.XPosition),
+		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.YPosition)
+		);*/
 	}
 	
 	return TargetTileGroup.bIsValid;
@@ -241,34 +208,81 @@ void ASS_Grid::UnregisterPawnFromGrid(ASS_Pawn* PawnToUnregister)
 	PawnToUnregister->TileGroup.TileArray.Empty();
 }
 
-ASS_Tile* const ASS_Grid::GetTileFromCoords(int32 TileX, int32 TileY) const
+#pragma region +++++ Helpers ...
+
+ASS_Tile* ASS_Grid::GetTileFromPosition(int32 XPosition, int32 YPosition) const
 {
-	if (TileX >= GridSizeX || TileY >= GridSizeY)
+	if (XPosition >= GridSizeX || YPosition >= GridSizeY)
 		return nullptr;
 
-	const int32 TileIndex = GridSizeY * TileX + TileY;
-
-	/*UE_LOG(LogTemp, Display, TEXT("ASS_Grid::GetTileFromCoords : TileX = %s , TileY = %s , TileIndex = %s"),
-	       *FString::FromInt(TileX),
-	       *FString::FromInt(TileY),
-	       *FString::FromInt(TileIndex)
-	);*/
-
+	const int32 TileIndex = GridSizeY * XPosition + YPosition;
 	if (TileArray.IsValidIndex(TileIndex))
 	{
 		return TileArray[TileIndex];	
 	}
-	else
-	{
-		return nullptr;	
-	}
+
+	return nullptr;	
+	
+	/*UE_LOG(LogTemp, Display, TEXT("ASS_Grid::GetTileFromCoords : TileX = %s , TileY = %s , TileIndex = %s"),
+	*FString::FromInt(XPosition),
+	*FString::FromInt(YPosition),
+	*FString::FromInt(TileIndex)
+	);*/
 }
 
-void ASS_Grid::GetTileGroup(
-	FSS_TileGroupData& GroupResult,
-	ASS_Tile* OriginTile,
-	int32 GroupSize,
-	const ASS_Pawn* PawnToIgnore)
+ASS_Tile* ASS_Grid::GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team) const
+{
+	if (Team == ESS_Team::South)
+	{
+		return (GetTileFromPosition(OriginTile->TileData.XPosition + 1, OriginTile->TileData.YPosition));
+	}
+	
+	if (Team == ESS_Team::North)
+	{
+		return (GetTileFromPosition(OriginTile->TileData.XPosition - 1, OriginTile->TileData.YPosition));
+	}
+	
+	return nullptr;
+}
+
+TArray<ASS_Tile*> ASS_Grid::GetTilesFromSquare(const ASS_Tile* FirstCornerTile, const ASS_Tile* SecondCornerTile) const
+{
+	TArray<ASS_Tile*> ResultArray;
+	
+	int32 XPositionMin;
+	int32 XPositionMax;
+	int32 YPositionMin;
+	int32 YPositionMax;
+
+	FirstCornerTile->TileData.YPosition <= SecondCornerTile->TileData.YPosition
+		? YPositionMin = FirstCornerTile->TileData.YPosition
+		: YPositionMin = SecondCornerTile->TileData.YPosition;
+
+	FirstCornerTile->TileData.YPosition >= SecondCornerTile->TileData.YPosition
+		? YPositionMax = FirstCornerTile->TileData.YPosition
+		: YPositionMax = SecondCornerTile->TileData.YPosition;
+
+	FirstCornerTile->TileData.XPosition <= SecondCornerTile->TileData.XPosition
+		? XPositionMin = FirstCornerTile->TileData.XPosition
+		: XPositionMin = SecondCornerTile->TileData.XPosition;
+
+	FirstCornerTile->TileData.XPosition >= SecondCornerTile->TileData.XPosition
+		? XPositionMax = FirstCornerTile->TileData.XPosition
+		: XPositionMax = SecondCornerTile->TileData.XPosition;
+
+	for (int32 YPosition = YPositionMin; YPosition <= YPositionMax; YPosition++)
+	{
+		for (int32 XPosition = XPositionMin; XPosition <= XPositionMax; XPosition++)
+		{
+			ResultArray.Add(GetTileFromPosition(XPosition, YPosition));
+		}
+	}
+	
+	return ResultArray;
+}
+
+void ASS_Grid::GetTileGroup(FSS_TileGroupData& GroupResult, ASS_Tile* OriginTile, int32 GroupSize,
+                            const ASS_Pawn* PawnToIgnore)
 {
 	GroupResult.bIsValid = true;
 	GroupResult.bIsInSpawn = true;
@@ -286,9 +300,9 @@ void ASS_Grid::GetTileGroup(
 	{
 		for (int32 YOffset = 0; YOffset < GroupSize; YOffset++)
 		{
-			ASS_Tile* TileToAdd = GetTileFromCoords(
-				OriginTile->TileData.PositionX + XOffset,
-				OriginTile->TileData.PositionY + YOffset
+			ASS_Tile* TileToAdd = GetTileFromPosition(
+				OriginTile->TileData.XPosition + XOffset,
+				OriginTile->TileData.YPosition + YOffset
 			);
 
 			if (TileToAdd == nullptr)
@@ -322,18 +336,125 @@ void ASS_Grid::GetTileGroup(
 	}
 }
 
-ASS_Tile* ASS_Grid::GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team)
+void ASS_Grid::GetSpawnTileGroupFromTile(FSS_TileGroupData& GroupResult, ASS_Tile* OriginTile, int32 GroupSize,
+                                         ESS_Team Team)
 {
-	if (Team == ESS_Team::South)
+	TArray<FSS_TileGroupData> GroupResults;
+	GroupResult.bIsValid = false;
+	GroupResult.bIsInSpawn = false;
+
+	const float MinYPosition = OriginTile->TileData.YPosition - GroupSize + 1;
+	const float MinXPosition = OriginTile->TileData.XPosition - GroupSize + 1;
+	
+	for (int32 YIndex = MinYPosition; YIndex <=  OriginTile->TileData.YPosition; YIndex++)
 	{
-		return (GetTileFromCoords(OriginTile->TileData.PositionX + 1, OriginTile->TileData.PositionY));
+		for (int32 XIndex = MinXPosition; XIndex <= OriginTile->TileData.XPosition; XIndex++)
+		{
+			ASS_Tile* OffsettedOriginTile = GetTileFromPosition(XIndex, YIndex);
+			if (OffsettedOriginTile)
+			{
+				FSS_TileGroupData GroupData;
+				GetTileGroup(GroupData, OffsettedOriginTile, GroupSize);
+				if (GroupData.bIsValid && GroupData.bIsInSpawn)
+				{
+					GroupResult = GroupData;
+					GroupResults.Add(GroupResult);
+				}
+			}
+		}
+	}
+
+	/*int32 MaxPositionX = GroupResults[];
+	float MinPositionY = 0;
+	for (const auto& ValidGroup : GroupResults)
+	{
+		
 	}
 	
-	if (Team == ESS_Team::North)
-	{
-		return (GetTileFromCoords(OriginTile->TileData.PositionX - 1, OriginTile->TileData.PositionY));
-	}
-	
-	return nullptr;
+	// If south team, get outer northwest tile, if north team, get outer southeast, so the origin tile will be in
+	// priority the upper left corner when facing enemy team.
+	if (Team == ESS_Team::North)*/
 }
+
+void ASS_Grid::GetValidTileGroupsFromSquare(TArray<FSS_TileGroupData>& GroupsResult, TArray<ASS_Tile*> SquareTiles,
+                                            int32 GroupSize)
+{
+	GroupsResult.Empty();
+	TArray<ASS_Tile*> UsedTiles;
+	
+	for (const auto& SquareTile : SquareTiles)
+	{
+		if (UsedTiles.Contains(SquareTile) == false)
+		{
+			FSS_TileGroupData TileGroup;
+			GetTileGroup(TileGroup, SquareTile, GroupSize);
+			if (TileGroup.bIsValid)
+			{
+				bool bContainsSquareTiles = true;
+				for (const auto& GroupTile1 : TileGroup.TileArray)
+				{
+					if (SquareTiles.Contains(GroupTile1) == false || UsedTiles.Contains(GroupTile1))
+					{
+						bContainsSquareTiles = false;
+					}
+				}
+
+				if (bContainsSquareTiles)
+				{
+					GroupsResult.Add(TileGroup);
+
+					for (const auto& GroupTile2 : TileGroup.TileArray)
+					{
+						UsedTiles.Add(GroupTile2);
+					}
+				}
+			}
+		}
+	}
+}
+
+void ASS_Grid::DebugTileGroup(const FSS_TileGroupData& TileGroup)
+{
+	UE_LOG(LogTemp, Display, TEXT("-------------------------------------------------------------"));
+	UE_LOG(LogTemp, Display, TEXT("bIsValid = %s"), *FString::FromInt(TileGroup.bIsValid));
+	UE_LOG(LogTemp, Display, TEXT("bIsInSpawn = %s"), *FString::FromInt(TileGroup.bIsInSpawn));
+	int32 Index = 0;
+	for (const auto& Tile : TileGroup.TileArray)
+	{
+		UE_LOG(LogTemp, Display, TEXT("Tile[%s] : XPosition = %s - YPosition = %s"),
+		       *FString::FromInt(Index),
+		       *FString::FromInt(Tile->TileData.XPosition),
+		       *FString::FromInt(Tile->TileData.YPosition)
+		);
+
+		Index++;
+	}
+	UE_LOG(LogTemp, Display, TEXT("-------------------------------------------------------------"));
+}
+
+#pragma endregion
+
+#pragma region +++++ Rendering ...
+
+void ASS_Grid::HighlightLine(int32 PositionY, bool bActivate)
+{
+	for (const auto& Tile : TileArray)
+	{
+		if (Tile->TileData.YPosition == PositionY)
+		{
+			Tile->HighlightColumnParticles(bActivate);
+		}
+	}
+}
+
+void ASS_Grid::DisableAllHighlight()
+{
+	for (const auto& Tile : TileArray)
+	{
+		Tile->HighlightColumnParticles(false);
+		Tile->HighlightLineParticles(false);
+	}
+}
+
+#pragma endregion
 

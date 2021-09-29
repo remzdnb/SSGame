@@ -44,7 +44,16 @@ private:
 	class UStaticMeshComponent* MeshCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystemComponent* ParticleCT;
+	class UParticleSystemComponent* SouthBorderParticleCT;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* NorthBorderParticleCT;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* WestBorderParticleCT;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* EastBorderParticleCT;
 	
 	// References
 
@@ -75,4 +84,15 @@ public:
 private:
 
 	TWeakObjectPtr<ASS_Pawn> RegisteredPawn;
+
+	///// Rendering
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+public:
+	
+	UFUNCTION()
+	void HighlightColumnParticles(bool bEnable, bool bIsStrongHighlight = false);
+
+	UFUNCTION()
+	void HighlightLineParticles(bool bEnable, bool bIsStrongHighlight = false);
 };

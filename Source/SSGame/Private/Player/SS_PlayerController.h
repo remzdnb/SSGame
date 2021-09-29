@@ -7,12 +7,6 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNewSelectedPawnDelegate);
 
-class USS_GameInstance;
-class ASS_CameraPawn;
-class ASS_Grid;
-class ASS_Tile;
-class ASS_Pawn;
-
 UCLASS()
 class ASS_PlayerController : public APlayerController
 {
@@ -22,40 +16,66 @@ public:
 
 	ASS_PlayerController();
 
-	// Actor
-
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void OnRep_PlayerState() override;
+	virtual void OnRep_Pawn() override;
 
 	// References
 
 private:
 	
-	USS_GameInstance* GInstance;
-	ASS_CameraPawn* CameraPawn;
-	ASS_Grid* Grid;
+	class USS_GameInstance* GInstance;
+	class ASS_CameraPawn* CameraPawn;
+	class USS_MainHUDWidget* HUDWidget;
+	class ASS_PlayerState* PState;
+	class ASS_Grid* Grid;
 
-	///// Pawn
+	///// Spawn
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 public:
 
+	FOnNewSelectedPawnDelegate OnNewSelectedPawnEvent;
+
+	//
+
 	UFUNCTION()
 	void SelectCharacterToSpawn(const FName& NewCharacterRowName);
 
-	//
-
-	FORCEINLINE UFUNCTION() const FName& GetCharacterToSpawnRowName() const { return SelectedPawnRowName; }
-
-	//
-
-	FOnNewSelectedPawnDelegate OnNewSelectedPawnEvent;
+	UFUNCTION()
+	const FName& GetCharacterToSpawnRowName() const { return SelectedPawnDataRowName; }
 
 private:
 
+	TWeakObjectPtr<class ASS_Tile> HoveredTile;
+	TWeakObjectPtr<class ASS_Tile> SelectedTile;
+
+	//
+
 	UPROPERTY()
-	FName SelectedPawnRowName;
+	bool bIsSpawnMode;
+
+	UPROPERTY()
+	bool bIsBatchSpawnMode;
+	
+	UPROPERTY()
+	FName SelectedPawnDataRowName;
+
+	UPROPERTY()
+	FSS_PawnData SelectedPawnData;
+
+	UPROPERTY()
+	TArray<ASS_Pawn*> DemoPawns;
+
+	UPROPERTY()
+	TArray<ASS_Pawn*> GamePawns;
+	
+	//
+	
+	UFUNCTION()
+	void UpdateHoveredTile();
 	
 	///// Input
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,12 +84,12 @@ public:
 	
 	virtual void SetupInputComponent() override;
 
-	//
-	
-	UFUNCTION()
-	void UpdateHoveredActor();
-
 private:
+
+	UPROPERTY()
+	bool bIsLeftMouseButtonPressed;
+
+	//
 
 	UFUNCTION() void LookUpAxis(float AxisValue);
 	UFUNCTION() void LookRightAxis(float AxisValue);
@@ -77,16 +97,13 @@ private:
 	UFUNCTION() void MoveForwardAxis(float AxisValue);
 	UFUNCTION() void MoveRightAxis(float AxisValue);
 	UFUNCTION() void OnLeftMouseButtonPressed();
+	UFUNCTION() void OnLeftMouseButtonReleased();
 	UFUNCTION() void RightMouseButtonPressed();
 	UFUNCTION() void RightMouseButtonReleased();
+	UFUNCTION() void MiddleMouseButtonPressed();
+	UFUNCTION() void MiddleMouseButtonReleased();
+	UFUNCTION() void TabKeyPressed();
 	UFUNCTION() void ShiftKeyPressed();
 	UFUNCTION() void ShiftKeyReleased();
 	UFUNCTION() void SpaceBarKeyPressed();
-
-	//
-
-	TWeakObjectPtr<AActor> HoveredActor;
-	TWeakObjectPtr<ASS_Tile> HoveredTile;
-	TWeakObjectPtr<ASS_Pawn> HoveredPawn;
-	
 };

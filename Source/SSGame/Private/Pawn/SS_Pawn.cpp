@@ -12,6 +12,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -52,6 +53,9 @@ ASS_Pawn::ASS_Pawn()
 	RangedDetectionCT->SetGenerateOverlapEvents(true);
 	RangedDetectionCT->SetupAttachment(RootComponent);
 
+	GroundParticleCT = CreateDefaultSubobject<UParticleSystemComponent>(FName("GroundParticleCT"));
+	GroundParticleCT->SetupAttachment(MeshAxisCT);
+
 	OTMWidgetCT = CreateDefaultSubobject<UWidgetComponent>(FName("OTMWidgetCT"));
 	OTMWidgetCT->SetupAttachment(MeshCT);
 
@@ -82,9 +86,17 @@ void ASS_Pawn::Init(
 	Health = PawnData.MaxHealth;
 
 	if (bIsDemoPawn)
+	{
 		State = ESS_PawnState::Demo;
+		bReplicates = false;
+		bOnlyRelevantToOwner = true;
+		GroundParticleCT->DestroyComponent();
+	}
 	else
+	{
 		State = ESS_PawnState::Idle;
+		bReplicates = true;
+	}
 
 	// Mesh components
 
@@ -108,6 +120,8 @@ void ASS_Pawn::Init(
 		0.0f
 	));
 	MeshCT->SetRelativeScale3D(PawnData.MeshScale);
+
+	GroundParticleCT->SetRelativeScale3D(FVector(PawnData.Size * 2));
 
 	if (bIsDemoPawn)
 	{
@@ -206,18 +220,24 @@ void ASS_Pawn::Init(
 void ASS_Pawn::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	MeleeDetectionCT->OnComponentBeginOverlap.AddDynamic(this, &ASS_Pawn::OnMeleeDetectionShereBeginOverlap);
+	MeleeDetectionCT->OnComponentEndOverlap.AddDynamic(this, &ASS_Pawn::OnMeleeDetectionSphereEndOverlap);
+	RangedDetectionCT->OnComponentBeginOverlap.AddDynamic(this, &ASS_Pawn::OnRangedDetectionShereBeginOverlap);
+	RangedDetectionCT->OnComponentEndOverlap.AddDynamic(this, &ASS_Pawn::OnRangedDetectionSphereEndOverlap);
 
+	if (State != ESS_PawnState::Demo)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), GInstance->GameSettings->SpawnParticle,
+											MeshAxisCT->GetComponentTransform());	
+	}
+	
 	if (OTMWidgetCT)
 	{
 		OTMWidget = Cast<USS_PawnOTMWidget>(OTMWidgetCT->GetWidget());
 		if (OTMWidget)
 			OTMWidget->Init(this);
 	}
-
-	MeleeDetectionCT->OnComponentBeginOverlap.AddDynamic(this, &ASS_Pawn::OnMeleeDetectionShereBeginOverlap);
-	MeleeDetectionCT->OnComponentEndOverlap.AddDynamic(this, &ASS_Pawn::OnMeleeDetectionSphereEndOverlap);
-	RangedDetectionCT->OnComponentBeginOverlap.AddDynamic(this, &ASS_Pawn::OnRangedDetectionShereBeginOverlap);
-	RangedDetectionCT->OnComponentEndOverlap.AddDynamic(this, &ASS_Pawn::OnRangedDetectionSphereEndOverlap);
 }
 
 void ASS_Pawn::Tick(float DeltaTime)

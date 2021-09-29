@@ -80,6 +80,9 @@ private:
 	class USphereComponent* RangedDetectionCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* GroundParticleCT;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OTMWidgetCT;
 	
 	// References

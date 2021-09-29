@@ -79,21 +79,17 @@ struct FSS_TileData
 	ESS_Team Team;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	int32 PositionX;
+	int32 XPosition;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	int32 PositionY;
-
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float DefaultSpawnRotationYaw;
+	int32 YPosition;
 	
 	FSS_TileData()
 	{
 		Type = ESS_TileType::Base;
 		Team = ESS_Team::Neutral;
-		PositionX = 0;
-		PositionY = 0;
-		DefaultSpawnRotationYaw = 0.0f;
+		XPosition = 0;
+		YPosition = 0;
 	}
 };
 
@@ -256,16 +252,16 @@ struct FSS_PawnSpawnData : public FTableRowBase
 	FName PawnDataRowName;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 PositionX;
+	int32 XPosition;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 PositionY;
+	int32 YPosition;
 	
 	FSS_PawnSpawnData()
 	{
 		PawnDataRowName = "None";
-		PositionX = 0;
-		PositionY = 0;
+		XPosition = 0;
+		YPosition = 0;
 	}
 };
 
@@ -275,7 +271,7 @@ struct FSS_WaveSpawnData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TArray<FSS_PawnSpawnData> WaveSpawnSettings;
+	TArray<FSS_PawnSpawnData> PawnsToSpawn;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float NextWaveTimer;

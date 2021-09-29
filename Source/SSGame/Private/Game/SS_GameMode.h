@@ -17,8 +17,18 @@ public:
 
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 protected:
 
-	USS_GameInstance* GInstance;
+	class USS_GameInstance* GInstance;
+
+	UPROPERTY()
+	AController* SouthTeamController;
+
+	UPROPERTY()
+	AController* NorthTeamController;
+	
+	UPROPERTY()
+	class ASS_GameAIController* GameAIController;
 };

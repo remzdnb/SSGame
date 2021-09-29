@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CoreMinimal.h"
+#include "SSGame.h"
 #include "GameFramework/Pawn.h"
 #include "SS_CameraPawn.generated.h"
 
@@ -60,17 +60,20 @@ public:
 
 	//
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	ESS_Team Team;
+	
+	UPROPERTY()
+	bool bIsRotationEnabled;
+
+	//
+
 	UFUNCTION() void MoveForward(float AxisValue);
 	UFUNCTION() void MoveRight(float AxisValue);
 	UFUNCTION() void AddPitchInput(float AxisValue);
 	UFUNCTION() void AddYawInput(float AxisValue);
 	UFUNCTION() void AddZoomInput(bool bZoomIn);
-
-	//
-
-	UPROPERTY()
-	bool bIsRotationEnabled;
-
+	
 private:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

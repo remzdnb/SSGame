@@ -41,6 +41,10 @@ private:
 	UPROPERTY() //Weakptr ?
 	ASS_Pawn* ControlledPawn;
 
+	// AI
+
+public:
+	
 	UPROPERTY()
 	bool bWantsToMove;
 };

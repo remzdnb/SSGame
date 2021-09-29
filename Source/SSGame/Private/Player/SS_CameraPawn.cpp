@@ -18,6 +18,7 @@ ASS_CameraPawn::ASS_CameraPawn()
 	//
 	
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = false;
 
 	//
 

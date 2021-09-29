@@ -28,10 +28,10 @@ void USS_PawnOTMWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 		if (PawnOwner->TileGroup.OriginTile)
 		{
 			TileText->SetText(FText::FromString(
-				"PositionX : " +
-				FString::FromInt(PawnOwner->TileGroup.OriginTile->TileData.PositionX) +
-				" // PositionY : " +
-				FString::FromInt(PawnOwner->TileGroup.OriginTile->TileData.PositionY)
+				"XPosition : " +
+				FString::FromInt(PawnOwner->TileGroup.OriginTile->TileData.XPosition) +
+				" // YPosition : " +
+				FString::FromInt(PawnOwner->TileGroup.OriginTile->TileData.YPosition)
 			));
 		}
 	}

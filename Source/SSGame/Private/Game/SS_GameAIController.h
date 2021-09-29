@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CoreMinimal.h"
+#include "SSGame.h"
 #include "AIController.h"
 #include "SS_GameAIController.generated.h"
 
@@ -14,4 +14,16 @@ public:
 	ASS_GameAIController();
 
 	virtual void BeginPlay() override;
+
+	//
+
+	class USS_GameInstance* GInstance;
+	class ASS_Grid* Grid;
+	
+	UFUNCTION()
+	void SpawnWave();
+
+	FTimerHandle WaveTimerHandle;
+
+	FSS_WaveSpawnData WaveSpawnData;
 };
