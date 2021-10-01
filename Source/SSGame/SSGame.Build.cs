@@ -18,8 +18,7 @@ public class SSGame : ModuleRules
 			"InputCore",
 			"UMG",
 			"AIModule",
-			"RZ_UIPlugin",
-			"RZ_UtilityPlugin"
+			"RZ_UIPlugin"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

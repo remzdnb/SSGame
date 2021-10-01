@@ -5,6 +5,7 @@
 #include "SS_GameMode.generated.h"
 
 class USS_GameInstance;
+class ASS_GameState;
 
 UCLASS()
 class ASS_GameMode : public AGameModeBase
@@ -19,9 +20,12 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
-protected:
+private:
 
-	class USS_GameInstance* GInstance;
+	USS_GameInstance* GInstance;
+	ASS_GameState* GState;
+	
+	FTimerHandle PhaseTimerHandle;
 
 	UPROPERTY()
 	AController* SouthTeamController;
@@ -31,4 +35,11 @@ protected:
 	
 	UPROPERTY()
 	class ASS_GameAIController* GameAIController;
+
+	//
+
+	UFUNCTION()
+	void SetNextPhase();
+	
 };
+

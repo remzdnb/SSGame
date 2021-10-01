@@ -3,11 +3,12 @@
 #include "Player/SS_CameraPawn.h"
 #include "Game/SS_GameInstance.h"
 #include "Game/SS_GameSettings.h"
-#include "Pawn/SS_Pawn.h"
+#include "Pawn/SS_Character.h"
 #include "Pawn/SS_PawnAIController.h"
 #include "World/SS_Grid.h"
 #include "World/SS_Tile.h"
 #include "UI/SS_MainHUDWidget.h"
+#include "SS_UtilityLibrary.h"
 // Engine
 #include "EngineUtils.h"
 #include "Engine/World.h"
@@ -15,9 +16,7 @@
 
 ASS_PlayerController::ASS_PlayerController()
 {
-	bIsSpawnMode = true;
-	bIsBatchSpawnMode = false;
-	bIsLeftMouseButtonPressed = false;
+	PCMode = ESS_PlayerControllerMode::Spawn;
 }
 
 void ASS_PlayerController::PostInitializeComponents()
@@ -48,6 +47,9 @@ void ASS_PlayerController::BeginPlay()
 		return;
 	
 	UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this);
+	FInputModeGameAndUI NewInputMode;
+	NewInputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(NewInputMode);
 	bShowMouseCursor = true;
 	bEnableMouseOverEvents = true;
 	bEnableClickEvents = true;
@@ -115,8 +117,6 @@ void ASS_PlayerController::OnRep_Pawn()
 	CameraPawn = Cast<ASS_CameraPawn>(GetPawn());
 }
 
-#pragma region +++++ ASS_PlayerController ...
-
 void ASS_PlayerController::SelectCharacterToSpawn(const FName& NewCharacterRowName)
 {
 	SelectedPawnDataRowName = NewCharacterRowName;
@@ -126,8 +126,50 @@ void ASS_PlayerController::SelectCharacterToSpawn(const FName& NewCharacterRowNa
 
 void ASS_PlayerController::UpdateHoveredTile()
 {
-	// Clear all previous stuff
-	
+	if (HoveredTile == nullptr)
+		return;
+
+	//if (HoveredTile->TileData.Team != PState->Team)
+		//return;
+
+	Grid->DisableAllHighlight();
+
+	if (DragStartTile)
+	{
+		SelectedTiles = Grid->GetTilesFromSquare(DragStartTile, HoveredTile);
+	}
+	else
+	{
+		SelectedTiles.Empty();
+		SelectedTiles.Add(HoveredTile);
+	}
+
+	for (const auto& SelectedTile : SelectedTiles)
+	{
+		Grid->HighlightLine(SelectedTile->TileData.YPosition, true);
+	}
+		
+	for (const auto& SelectedTile : SelectedTiles)
+	{
+		SelectedTile->HighlightColumnParticles(true, true);
+		SelectedTile->HighlightLineParticles(true, true);
+	}
+
+	if (PCMode == ESS_PlayerControllerMode::Spawn)
+	{
+		UpdateDemoPawns();
+	}
+	else
+	{
+		if (SelectedPawns.Num() != 0)
+		{
+			UpdateDemoMovement();
+		}
+	}
+}
+
+void ASS_PlayerController::UpdateDemoPawns()
+{
 	for (const auto& DemoPawn : DemoPawns)
 	{
 		if (DemoPawn)
@@ -136,103 +178,66 @@ void ASS_PlayerController::UpdateHoveredTile()
 		}
 	}
 	DemoPawns.Empty();
-	Grid->DisableAllHighlight();
 
-	//
-
-	if (HoveredTile.IsValid() == false)
-		return;
-
-	if (HoveredTile->TileData.Team != PState->Team)
-		return;
-
-    if (bIsSpawnMode)
-    {
-    	if (bIsBatchSpawnMode)
-    	{
-    		const TArray<ASS_Tile*> ResultTiles = Grid->GetTilesFromSquare(SelectedTile.Get(), HoveredTile.Get());
-    		TArray<FSS_TileGroupData> ValidTileGroups;
-    		Grid->GetValidTileGroupsFromSquare(ValidTileGroups, ResultTiles, SelectedPawnData.Size);
-    		for (const auto& TileGroup : ValidTileGroups)
-    		{
-    			DemoPawns.Add(Grid->SpawnPawn(TileGroup, SelectedPawnDataRowName, true));
-    		}
-
-    		for (const auto& ResultTile : ResultTiles)
-    		{
-    			ResultTile->HighlightColumnParticles(true, true);
-    			ResultTile->HighlightLineParticles(true, true);
-    			Grid->HighlightLine(ResultTile->TileData.YPosition, true);
-    		}
-    	}
-    	else
-    	{
-    		FSS_TileGroupData DemoPawnTileGroup;
-    		Grid->GetSpawnTileGroupFromTile(DemoPawnTileGroup, HoveredTile.Get(), SelectedPawnData.Size, ESS_Team::North);
-    		Grid->DebugTileGroup(DemoPawnTileGroup);
-    		if (DemoPawnTileGroup.bIsValid &&
-				DemoPawnTileGroup.bIsInSpawn &&
-				DemoPawnTileGroup.OriginTile->TileData.Team == PState->Team)
-    		{
-    			DemoPawns.Add(Grid->SpawnPawn(DemoPawnTileGroup, SelectedPawnDataRowName, true));
-    		}
-
-    		Grid->HighlightLine(HoveredTile->TileData.YPosition, true);
-    		HoveredTile->HighlightColumnParticles(true, true);
-    		HoveredTile->HighlightLineParticles(true, true);
-    	}
-    }
-
-	/*	Grid->HighlightLine(HoveredTile->TileData.YPosition, true);
-		HoveredTile->HighlightLineParticles(true);
-		
-		if (bIsLeftMouseButtonPressed)
-		{
-			const TArray<ASS_Tile*> ResultTiles = Grid->GetTilesFromSquare(SelectedTile.Get(), HoveredTile.Get());
-			TArray<FSS_TileGroupData> ValidTileGroups;
-
-			Grid->GetValidTileGroupsFromSquare(ValidTileGroups, ResultTiles, SelectedPawnData.Size);
-			for (const auto& TileGroup : ValidTileGroups)
-			{
-				DemoPawns.Add(Grid->SpawnPawn(TileGroup, SelectedPawnDataRowName, true));
-				//Grid->OnTileHoverBegin(Tile, SelectedPawnRowName);
-			}
-		}
-	}*/
-
-	/*if (HoveredTile.IsValid())
+	TArray<FSS_TileGroupData> ValidTileGroups;
+	Grid->GetValidTileGroupsFromSquare(ValidTileGroups, SelectedTiles, SelectedPawnData.Size);
+	for (const auto& TileGroup : ValidTileGroups)
 	{
-	if (bIsLeftMouseButtonPressed)
-	{
-	TArray<ASS_Tile*> ResultTiles = Grid->GetTilesFromSquare(SelectedTile.Get(), HoveredTile.Get());
-
-	for (const auto& Tile : ResultTiles)
-	{
-	FSS_TileGroupData NewTileGroup;
-	Grid->GetTileGroup(NewTileGroup, Tile, 1);
-	DemoPawns.Add(Grid->SpawnPawn(NewTileGroup, SelectedPawnDataRowName, true));
-	//Grid->OnTileHoverBegin(Tile, SelectedPawnRowName);
+		DemoPawns.Add(Grid->SpawnPawn(TileGroup, SelectedPawnDataRowName, true));
 	}
-	}
-	}*/
-	
-	/*if (HoveredActor == HitResult.Actor)
-	return;
-	
-	if (HoveredTile.IsValid())
-	Grid->OnTileHoverEnd();
-
-	HoveredActor = HitResult.Actor;
-
-	HoveredTile = Cast<ASS_Tile>(HitResult.Actor);
-	if (HoveredTile.IsValid())
-	{
-	Grid->OnTileHoverBegin(HoveredTile.Get(), SelectedPawnRowName);
-	//HoveredTile->OnHoverStart(SelectedPawnRowName);
-	}*/
 }
 
-#pragma endregion
+void ASS_PlayerController::UpdateSelectedPawns()
+{
+	UnselectAllPawns();
+	
+	for (const auto& SelectedTile : SelectedTiles)
+	{
+		ASS_Pawn* SelectedPawn = SelectedTile->GetRegisteredPawn().Get();
+		if (SelectedPawn)
+		{
+			SelectedPawn->ToggleHighlight(true);
+			SelectedPawns.Add(SelectedPawn);
+		}
+	}
+}
+
+void ASS_PlayerController::UnselectAllPawns()
+{
+	for (const auto& SelectedPawn : SelectedPawns)
+	{
+		if (SelectedPawn.IsValid())
+		{
+			SelectedPawn->ToggleHighlight(false);
+		}
+	}
+	SelectedPawns.Empty();
+}
+
+void ASS_PlayerController::UpdateDemoMovement()
+{
+	TArray<ASS_Tile*> PawnOriginTiles;
+	for (const auto& SelectedPawn : SelectedPawns)
+	{
+		PawnOriginTiles.Add(SelectedPawn->TileGroup.OriginTile);
+	}
+	ASS_Tile* ClosestPawnOriginTile = Grid->GetClosestTile(HoveredTile, PawnOriginTiles);
+	
+	Grid->GetMoveData(SavedMoveData, ClosestPawnOriginTile, HoveredTile);
+	
+	for (const auto& SelectedPawn : SelectedPawns)
+	{
+		ASS_Character* CharacterToMove = Cast<ASS_Character>(SelectedPawn);
+		if (CharacterToMove)
+		{
+			CharacterToMove->UpdateMoveArrow(true, Grid->GetTileFromMoveData(CharacterToMove->TileGroup.OriginTile, SavedMoveData));
+		}
+	}
+}
+
+void ASS_PlayerController::SpawnPawn_Implementation()
+{
+}
 
 #pragma region +++++ Input ...
 
@@ -309,46 +314,47 @@ void ASS_PlayerController::MoveRightAxis(float AxisValue)
 
 void ASS_PlayerController::OnLeftMouseButtonPressed()
 {
-	FInputModeGameAndUI NewInputMode;
-	NewInputMode.SetHideCursorDuringCapture(false);
-	SetInputMode(NewInputMode);
-	
-	/*FHitResult HitResult;
-	GetHitResultUnderCursorByChannel(UEngineTypes::ConvertToTraceType(ECC_Visibility), true, HitResult);
-	ASS_Tile* const HitZone = Cast<ASS_Tile>(HitResult.Actor);
-	if (HitZone)
-	{
-		Grid->OnTileClicked(HitZone, SelectedPawnRowName);
-	}*/
-
-	if (HoveredTile.IsValid())
-	{
-		SelectedTile = HoveredTile;
-		bIsLeftMouseButtonPressed = true;
-	}
-		
+	DragStartTile = HoveredTile;
 }
 
 void ASS_PlayerController::OnLeftMouseButtonReleased()
 {
-	for (const auto& DemoPawn : DemoPawns)
+	if (PCMode == ESS_PlayerControllerMode::Spawn)
 	{
-		GamePawns.Add(Grid->SpawnPawn(DemoPawn->TileGroup, SelectedPawnDataRowName));
+		for (const auto& DemoPawn : DemoPawns)
+		{
+			Grid->SpawnPawnServer(DemoPawn->TileGroup.OriginTile, SelectedPawnDataRowName, false);
+			//GamePawns.Add(Grid->SpawnPawn(DemoPawn->TileGroup, SelectedPawnDataRowName));
+		}
+
+		for (const auto& DemoPawn : DemoPawns)
+		{
+			DemoPawn->Destroy();
+		}
+
+		DemoPawns.Empty();
+	}
+	else
+	{
+		UpdateSelectedPawns();
 	}
 
-	for (const auto& DemoPawn : DemoPawns)
-	{
-		DemoPawn->Destroy();
-	}
-
-	DemoPawns.Empty();
-	
-	bIsLeftMouseButtonPressed = false;
+	DragStartTile = nullptr;
 }
 
 void ASS_PlayerController::RightMouseButtonPressed()
 {
-	
+	if (PCMode == ESS_PlayerControllerMode::Selection)
+	{
+		for (const auto& SelectedPawn : SelectedPawns)
+		{
+			ASS_Character* CharacterToMove = Cast<ASS_Character>(SelectedPawn);
+			if (CharacterToMove)
+			{
+				CharacterToMove->MoveData = SavedMoveData;
+			}
+		}
+	}
 }
 
 void ASS_PlayerController::RightMouseButtonReleased()
@@ -380,43 +386,43 @@ void ASS_PlayerController::MiddleMouseButtonReleased()
 
 void ASS_PlayerController::TabKeyPressed()
 {
-	if (bIsSpawnMode)
+	if (PCMode == ESS_PlayerControllerMode::Spawn)
 	{
-		bIsSpawnMode = false;
+		PCMode = ESS_PlayerControllerMode::Selection;
 		for (const auto& DemoPawn : DemoPawns)
 		{
 			if (DemoPawn)
 				DemoPawn->Destroy();
 		}
 		DemoPawns.Empty();
+		HUDWidget->TogglePawnSelectionPanelBPI(false);
 	}
 	else
 	{
-		bIsSpawnMode = true;
+		UnselectAllPawns();
+		PCMode = ESS_PlayerControllerMode::Spawn;
 		UpdateHoveredTile();
+		HUDWidget->TogglePawnSelectionPanelBPI(true);
 	}
-	
-	if (HUDWidget)
-		HUDWidget->TogglePawnSelectionPanelBPI(bIsSpawnMode);
 }
 
 void ASS_PlayerController::ShiftKeyPressed()
 {
-	SelectedTile = HoveredTile;
+	/*SelectedTile = HoveredTile;
 	bIsBatchSpawnMode = true;
-	UpdateHoveredTile();
+	UpdateHoveredTile();*/
 }
 
 void ASS_PlayerController::ShiftKeyReleased()
 {
-	for (const auto& DemoPawn : DemoPawns)
+	/*for (const auto& DemoPawn : DemoPawns)
 	{
 		DemoPawn->Destroy();
 	}
 	DemoPawns.Empty();
 	
 	bIsBatchSpawnMode = false;
-	UpdateHoveredTile();
+	UpdateHoveredTile();*/
 }
 
 void ASS_PlayerController::SpaceBarKeyPressed()

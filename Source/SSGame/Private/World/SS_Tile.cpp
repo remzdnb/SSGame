@@ -50,21 +50,21 @@ void ASS_Tile::BeginPlay()
 
 	FLinearColor TileParticleColor;
 	if (TileData.Team == ESS_Team::Neutral)
-		TileParticleColor = GInstance->GameSettings->NeutralTileParticleColor;
+		TileParticleColor = GInstance->GameSettings->TileParticleColor_01;
 	if (TileData.Team == ESS_Team::South)
 		TileParticleColor = GInstance->GameSettings->EnemyTileParticleColor;
 	if (TileData.Team == ESS_Team::North)
 		TileParticleColor = GInstance->GameSettings->AllyTileParticleColor;
 	
 
-	SouthBorderParticleCT->SetColorParameter("Color", TileParticleColor);
-	NorthBorderParticleCT->SetColorParameter("Color", TileParticleColor);
+	//SouthBorderParticleCT->SetColorParameter("Color", FColor(100.0f,100.0f,100.0f));
+	/*NorthBorderParticleCT->SetColorParameter("Color", TileParticleColor);
 	WestBorderParticleCT->SetColorParameter("Color", TileParticleColor);
 	EastBorderParticleCT->SetColorParameter("Color", TileParticleColor);
-	SouthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
-	NorthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
-	WestBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
-	EastBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
+	SouthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->TileParticleColor_01.A);
+	NorthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->TileParticleColor_01.A);
+	WestBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->TileParticleColor_01.A);
+	EastBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->TileParticleColor_01.A);*/
 }
 
 void ASS_Tile::Tick(float DeltaTime)
@@ -124,19 +124,25 @@ void ASS_Tile::HighlightColumnParticles(bool bEnable, bool bIsStrongHighlight)
 	{
 		if (bIsStrongHighlight)
 		{
-			WestBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->StrongHighlightTileParticleOpacity);
-			EastBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->StrongHighlightTileParticleOpacity);
+			//WestBorderParticleCT->SetColorParameter("Color", FLinearColor(0.0f,1.0f,0.0f));
+			WestBorderParticleCT->SetFloatParameter("Opacity", 0.1f);
+			//EastBorderParticleCT->SetColorParameter("Color", FLinearColor(0.0f,0.0f,1.0f));
+			EastBorderParticleCT->SetFloatParameter("Opacity", 0.1f);
 		}
 		else
 		{
-			WestBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->LightHighlightTileParticleOpacity);
-			EastBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->LightHighlightTileParticleOpacity);
+			//WestBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_02);
+			WestBorderParticleCT->SetFloatParameter("Opacity", 0.01f);
+			//EastBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_02);
+			EastBorderParticleCT->SetFloatParameter("Opacity", 0.01f);
 		}
 	}
 	else
 	{
-		WestBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
-		EastBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
+		//WestBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_01);
+		WestBorderParticleCT->SetFloatParameter("Opacity", 0.0005f);
+		//EastBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_01);
+		EastBorderParticleCT->SetFloatParameter("Opacity", 0.0005f);
 	}
 }
 
@@ -146,18 +152,24 @@ void ASS_Tile::HighlightLineParticles(bool bEnable, bool bIsStrongHighlight)
 	{
 		if (bIsStrongHighlight)
 		{
-			SouthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->StrongHighlightTileParticleOpacity);
-			NorthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->StrongHighlightTileParticleOpacity);
+			//SouthBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_03);
+			SouthBorderParticleCT->SetFloatParameter("Opacity", 0.1f);
+			//NorthBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_03);
+			NorthBorderParticleCT->SetFloatParameter("Opacity", 0.1f);
 		}
 		else
 		{
-			SouthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->LightHighlightTileParticleOpacity);
-			NorthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->LightHighlightTileParticleOpacity);
+			//SouthBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_02);
+			SouthBorderParticleCT->SetFloatParameter("Opacity", 0.01f);
+			//NorthBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_02);
+			NorthBorderParticleCT->SetFloatParameter("Opacity", 0.01f);
 		}
 	}
 	else
 	{
-		SouthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
-		NorthBorderParticleCT->SetFloatParameter("Opacity", GInstance->GameSettings->DefaultTileParticleOpacity);
+		//SouthBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_01);
+		SouthBorderParticleCT->SetFloatParameter("Opacity", 0.0005f);
+		//NorthBorderParticleCT->SetColorParameter("Color", GInstance->GameSettings->TileParticleColor_01);
+		NorthBorderParticleCT->SetFloatParameter("Opacity", 0.0005f);
 	}
 }

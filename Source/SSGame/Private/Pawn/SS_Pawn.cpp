@@ -3,7 +3,6 @@
 #include "Weapon/SS_ProjectileSpline.h"
 #include "Weapon/SS_Projectile.h"
 #include "World/SS_Grid.h"
-#include "World/SS_Tile.h"
 #include "Game/SS_GameInstance.h"
 #include "Game/SS_GameSettings.h"
 #include "UI/SS_PawnOTMWidget.h"
@@ -23,20 +22,20 @@ ASS_Pawn::ASS_Pawn()
 	RootCT = CreateDefaultSubobject<USceneComponent>(FName("RootCT"));
 	RootComponent = RootCT;
 
-	MeshAxisCT = CreateDefaultSubobject<USceneComponent>(FName("MeshAxisCT"));
-	MeshAxisCT->SetupAttachment(RootComponent);
+	RotationAxisCT = CreateDefaultSubobject<USceneComponent>(FName("RotationAxisCT"));
+	RotationAxisCT->SetupAttachment(RootComponent);
 
-	MeshCT = CreateDefaultSubobject<USkeletalMeshComponent>(FName("MeshCT"));
-	MeshCT->SetCollisionProfileName("PawnMeshPreset");
-	MeshCT->SetupAttachment(MeshAxisCT);
+	SkeletalMeshCT = CreateDefaultSubobject<USkeletalMeshComponent>(FName("SkeletalMeshCT"));
+	SkeletalMeshCT->SetCollisionProfileName("PawnMeshPreset");
+	SkeletalMeshCT->SetupAttachment(RotationAxisCT);
 
 	MeleeWeaponMeshCT = CreateDefaultSubobject<UStaticMeshComponent>(FName("MeleeWeaponMeshCT"));
 	MeleeWeaponMeshCT->SetCollisionProfileName("NoCollision");
-	MeleeWeaponMeshCT->SetupAttachment(MeshCT, "Hand_R");
+	MeleeWeaponMeshCT->SetupAttachment(SkeletalMeshCT, "Hand_R");
 
 	RangedWeaponMeshCT = CreateDefaultSubobject<USkeletalMeshComponent>(FName("RangedWeaponMeshCT"));
 	RangedWeaponMeshCT->SetCollisionProfileName("NoCollision");
-	RangedWeaponMeshCT->SetupAttachment(MeshCT, "Hand_L");
+	RangedWeaponMeshCT->SetupAttachment(SkeletalMeshCT, "Hand_L");
 
 	CollisionCT = CreateDefaultSubobject<UBoxComponent>(FName("CollisionCT"));
 	CollisionCT->SetCollisionProfileName("PawnCollisionPreset");
@@ -54,34 +53,24 @@ ASS_Pawn::ASS_Pawn()
 	RangedDetectionCT->SetupAttachment(RootComponent);
 
 	GroundParticleCT = CreateDefaultSubobject<UParticleSystemComponent>(FName("GroundParticleCT"));
-	GroundParticleCT->SetupAttachment(MeshAxisCT);
+	GroundParticleCT->SetupAttachment(RotationAxisCT);
 
 	OTMWidgetCT = CreateDefaultSubobject<UWidgetComponent>(FName("OTMWidgetCT"));
-	OTMWidgetCT->SetupAttachment(MeshCT);
+	OTMWidgetCT->SetupAttachment(RootComponent);
 
 	//
 
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void ASS_Pawn::Init(
-	const FName& PawnDataRowName,
-	const FSS_TileGroupData& SpawnTileGroup,
-	ESS_Team NewTeam,
-	bool bIsDemoPawn,
-	bool bIsDemoPawnValidLocation)
+void ASS_Pawn::Init_Multicast_Implementation(const FName& PawnDataRowName, const FSS_TileGroupData& SpawnTileGroup,
+                                             ESS_Team NewTeam, bool bIsDemoPawn, bool bIsDemoPawnValidLocation)
 {
 	GInstance = Cast<USS_GameInstance>(GetGameInstance());
-	AInstance = Cast<USS_PawnAnimInstance>(MeshCT->GetAnimInstance());
-
-	for (TActorIterator<ASS_Grid> FoundGrid(GetWorld()); FoundGrid; ++FoundGrid)
-	{
-		Grid = *FoundGrid; // get from instance / gamemode ?
-	}
-
+	PawnData = *GInstance->GetPawnDataFromRow(PawnDataRowName);
+	Grid = GInstance->Grid;
 	TileGroup = SpawnTileGroup;
 	Team = NewTeam;
-	PawnData = *GInstance->GetPawnDataFromRow(PawnDataRowName);
 	
 	Health = PawnData.MaxHealth;
 
@@ -98,37 +87,33 @@ void ASS_Pawn::Init(
 		bReplicates = true;
 	}
 
-	// Mesh components
-
-	//MeshCT->SetSkeletalMesh(PawnData.MeshTemplate);
-
-	if (PawnData.bIsMeshFacingXAxis == false)
-	{
-		MeshCT->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	}
-
-	if (Team == ESS_Team::South)
-		DefaultRotation = FRotator(0.0f, 0.0f, 0.0f);
-	else
-		DefaultRotation = FRotator(0.0f, 180.0f, 0.0f);
-
-	MeshAxisCT->SetWorldRotation(DefaultRotation);
-
-	MeshAxisCT->SetRelativeLocation(FVector(
+	// Rotation axis component
+	
+	Team == ESS_Team::South
+		? DefaultAxisRotation = FRotator(0.0f, 0.0f, 0.0f)
+		: DefaultAxisRotation = FRotator(0.0f, 180.0f, 0.0f);
+	
+	RotationAxisCT->SetWorldRotation(DefaultAxisRotation);
+	RotationAxisCT->SetRelativeLocation(FVector(
 		(PawnData.Size - 1) * (TILESIZE / 2),
 		(PawnData.Size - 1) * (TILESIZE / 2),
 		0.0f
 	));
-	MeshCT->SetRelativeScale3D(PawnData.MeshScale);
+	
+	// Mesh components
 
-	GroundParticleCT->SetRelativeScale3D(FVector(PawnData.Size * 2));
-
+	if (SkeletalMeshCT)
+	{
+		AInstance = Cast<USS_PawnAnimInstance>(SkeletalMeshCT->GetAnimInstance()); // ?
+	}
+	
 	if (bIsDemoPawn)
 	{
 		if (bIsDemoPawnValidLocation)
 		{
-			if (MeshCT)
-				MeshCT->SetMaterial(0, GInstance->GameSettings->DemoPawnMaterial_Valid);
+			// ToDo : for loop on meshes
+			if (SkeletalMeshCT)
+				SkeletalMeshCT->SetMaterial(0, GInstance->GameSettings->DemoPawnMaterial_Valid);
 			if (MeleeWeaponMeshCT)
 				MeleeWeaponMeshCT->SetMaterial(0, GInstance->GameSettings->DemoPawnMaterial_Valid);
 			if (RangedWeaponMeshCT)
@@ -136,8 +121,8 @@ void ASS_Pawn::Init(
 		}
 		else
 		{
-			if (MeshCT)
-				MeshCT->SetMaterial(0, GInstance->GameSettings->DemoPawnMaterial_Invalid);
+			if (SkeletalMeshCT)
+				SkeletalMeshCT->SetMaterial(0, GInstance->GameSettings->DemoPawnMaterial_Invalid);
 			if (MeleeWeaponMeshCT)
 				MeleeWeaponMeshCT->SetMaterial(0, GInstance->GameSettings->DemoPawnMaterial_Invalid);
 			if (RangedWeaponMeshCT)
@@ -145,7 +130,7 @@ void ASS_Pawn::Init(
 		}
 	}
 
-	// Setup collision & detection components.
+	// Collision & detection components.
 
 	if (bIsDemoPawn)
 	{
@@ -189,20 +174,11 @@ void ASS_Pawn::Init(
 		}
 	}
 
-	// Timelines
+	//
 
-	MoveCurve = GInstance->GameSettings->LinearCurveFloat;
-	if (MoveCurve)
-	{
-		FOnTimelineFloat MoveTimelineProgressCallback;
-		FOnTimelineEventStatic MoveTimelineFinishedCallback;
-		MoveTimelineProgressCallback.BindUFunction(this, FName("MoveTimelineProgress"));
-		MoveTimelineFinishedCallback.BindUFunction(this, FName("MoveTimelineEnd"));
-		MoveTimeline.AddInterpFloat(MoveCurve, MoveTimelineProgressCallback);
-		MoveTimeline.SetTimelineFinishedFunc(MoveTimelineFinishedCallback);
-		MoveTimeline.SetLooping(false);
-		MoveTimeline.SetPlayRate(PawnData.MoveSpeed);
-	}
+	GroundParticleCT->SetRelativeScale3D(FVector(PawnData.Size * 2));
+
+	// Timelines
 
 	AttackCurve = GInstance->GameSettings->LinearCurveFloat;
 	if (AttackCurve)
@@ -229,7 +205,7 @@ void ASS_Pawn::BeginPlay()
 	if (State != ESS_PawnState::Demo)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), GInstance->GameSettings->SpawnParticle,
-											MeshAxisCT->GetComponentTransform());	
+											RotationAxisCT->GetComponentTransform());	
 	}
 	
 	if (OTMWidgetCT)
@@ -243,65 +219,23 @@ void ASS_Pawn::BeginPlay()
 void ASS_Pawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	MoveTimeline.TickTimeline(DeltaTime);
+	
 	AttackTimeline.TickTimeline(DeltaTime);
 
 	if (TargetPawn.IsValid())
 	{
-		MeshAxisCT->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(
+		RotationAxisCT->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(
 			GetActorLocation(),
 			TargetPawn->GetActorLocation()
 		));
 	}
 	else
 	{
-		MeshAxisCT->SetWorldRotation(DefaultRotation);
+		RotationAxisCT->SetWorldRotation(DefaultAxisRotation);
 	}
 
 	Debug(DeltaTime);
 }
-
-#pragma region +++++ Movement ...
-
-void ASS_Pawn::StartNewMove(ESS_PawnMoveType NewMoveType)
-{
-	if (NewMoveType == ESS_PawnMoveType::Idle)
-	{
-		State = ESS_PawnState::Idle;
-		AInstance->PlayIdleAnimation();
-	}
-	else
-	{
-		State = ESS_PawnState::Move;
-		AInstance->PlayMoveAnimation();
-	}
-}
-
-void ASS_Pawn::StartMoveToTileGroup()
-{
-	MoveStartLocation = GetActorLocation();
-	MoveDirection = UKismetMathLibrary::FindLookAtRotation(
-		MoveStartLocation,
-		TileGroup.OriginTile->CenterLocation
-	).Vector();
-	MoveDistance = FVector::Dist(MoveStartLocation, TileGroup.OriginTile->CenterLocation);
-
-	MoveTimeline.PlayFromStart();
-}
-
-void ASS_Pawn::MoveTimelineProgress(float Value)
-{
-	const FVector NewLocation = MoveStartLocation + MoveDirection * MoveDistance * Value;
-	SetActorLocation(NewLocation);
-}
-
-void ASS_Pawn::MoveTimelineEnd()
-{
-	OnPawnActionCompletedEvent.Broadcast();
-}
-
-#pragma endregion
 
 #pragma region +++++ Combat ...
 
@@ -352,7 +286,9 @@ void ASS_Pawn::StartNewMeleeAttack()
 	State = ESS_PawnState::MeleeAttackStart;
 	AttackTimeline.SetPlayRate(1 / PawnData.MeleeAttackStartDelay);
 	AttackTimeline.PlayFromStart();
-	AInstance->PlayMeleeAttackStartAnimation();
+
+	if (AInstance)
+		AInstance->PlayMeleeAttackStartAnimation();
 }
 
 void ASS_Pawn::StartNewRangedAttack()
@@ -379,7 +315,7 @@ void ASS_Pawn::StartNewRangedAttack()
 		else
 		{
 			LoadedProjectile->AttachToComponent(
-				MeshCT,
+				SkeletalMeshCT,
 				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 				"ProjectileSocket"
 			);
@@ -390,7 +326,9 @@ void ASS_Pawn::StartNewRangedAttack()
 	State = ESS_PawnState::RangedAttackStart;
 	AttackTimeline.SetPlayRate(1 / PawnData.RangedAttackStartDelay);
 	AttackTimeline.PlayFromStart();
-	AInstance->PlayRangedAttackStartAnimation();
+
+	if (AInstance)
+		AInstance->PlayRangedAttackStartAnimation();
 }
 
 void ASS_Pawn::OnAttackTimelineEnd()
@@ -408,7 +346,9 @@ void ASS_Pawn::OnAttackTimelineEnd()
 		State = ESS_PawnState::MeleeAttackStop;
 		AttackTimeline.SetPlayRate(1 / PawnData.MeleeAttackStopDelay);
 		AttackTimeline.PlayFromStart();
-		AInstance->PlayMeleeAttackStopAnimation();
+
+		if (AInstance)
+			AInstance->PlayMeleeAttackStopAnimation();
 	}
 	else if (State == ESS_PawnState::RangedAttackStart)
 	{
@@ -416,7 +356,9 @@ void ASS_Pawn::OnAttackTimelineEnd()
 		State = ESS_PawnState::RangedAttackStop;
 		AttackTimeline.SetPlayRate(1 / PawnData.RangedAttackStopDelay);
 		AttackTimeline.PlayFromStart();
-		AInstance->PlayRangedAttackStopAnimation();
+
+		if (AInstance)
+			AInstance->PlayRangedAttackStopAnimation();
 	}
 	else if (State == ESS_PawnState::MeleeAttackStop || State == ESS_PawnState::RangedAttackStop)
 	{
@@ -432,8 +374,8 @@ void ASS_Pawn::ExecuteMeleeAttack()
 void ASS_Pawn::ExecuteRangedAttack()
 {
 	const FTransform SpawnTransform = FTransform(
-		MeshAxisCT->GetComponentRotation(),
-		FVector(MeshCT->GetComponentLocation().X, MeshCT->GetComponentLocation().Y, 400.0f),
+		RotationAxisCT->GetComponentRotation(),
+		FVector(SkeletalMeshCT->GetComponentLocation().X, SkeletalMeshCT->GetComponentLocation().Y, 400.0f),
 		FVector(1.0f)
 	);
 
@@ -459,15 +401,16 @@ void ASS_Pawn::ReceiveDamage(float Damage, class ASS_Projectile* Projectile)
 		Die();
 	}
 
-	UGameplayStatics::SpawnEmitterAttached(
+	UGameplayStatics::SpawnEmitterAtLocation(
+		GetWorld(),
 		PawnData.HitParticle,
-		MeshCT,
-		"spine_03"
+		GetActorLocation()
 	);
 
 	if (Projectile)
 	{
-		Projectile->AttachToComponent(MeshCT, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		// ToDO : no, just detroy them
+		//Projectile->AttachToComponent(SkeletalMeshCT, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		AttachedProjectiles.Add(Projectile);
 	}
 
@@ -488,7 +431,9 @@ void ASS_Pawn::Die()
 		Projectile->Destroy();
 	}
 
-	AInstance->PlayDeathAnimation();
+	if (AInstance)
+		AInstance->PlayDeathAnimation();
+	
 	SetLifeSpan(5.0f);
 	Destroy();
 }
@@ -544,6 +489,24 @@ void ASS_Pawn::OnRangedDetectionSphereEndOverlap(UPrimitiveComponent* Overlapped
 		{
 			RangedDetectedPawns.Remove(UndetectedPawn);
 		}
+	}
+}
+
+void ASS_Pawn::ToggleHighlight(bool bEnable)
+{
+	if (SkeletalMeshCT)
+	{
+		SkeletalMeshCT->SetCustomDepthStencilValue(1);
+		SkeletalMeshCT->SetRenderCustomDepth(bEnable);	
+	}
+
+	TInlineComponentArray<UStaticMeshComponent*> StaticMeshes;
+	GetComponents(StaticMeshes);
+
+	for (const auto& StaticMesh : StaticMeshes)
+	{
+		StaticMesh->SetCustomDepthStencilValue(1);
+		StaticMesh->SetRenderCustomDepth(bEnable);
 	}
 }
 

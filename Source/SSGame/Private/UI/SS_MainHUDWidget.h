@@ -1,8 +1,14 @@
 #pragma once
 
-#include "CoreMinimal.h"
+#include "SSGame.h"
 #include "Blueprint/UserWidget.h"
 #include "SS_MainHUDWidget.generated.h"
+
+class USS_GameInstance;
+class ASS_GameState;
+class ASS_PlayerController;
+class UPanelWidget;
+class UTextBlock;
 
 UCLASS()
 class USS_MainHUDWidget : public UUserWidget
@@ -19,14 +25,21 @@ public:
 	void TogglePawnSelectionPanelBPI(bool bNewIsVisible);
 
 private:
+	
+	USS_GameInstance* GInstance;
+	ASS_GameState* GState;
+	ASS_PlayerController* PController;
+
+	UPROPERTY(meta = (BindWidget)) UPanelWidget* CharacterSelectionPanel;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* GamePhaseText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* GamePhaseCooldownText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* GoldAmountText;
+
+	//
 
 	UFUNCTION()
 	void UpdateCharacterSelectionPanel();
 
-	//
-
-	class USS_GameInstance* GInstance;
-	class ASS_PlayerController* PController;
-
-	UPROPERTY(meta = (BindWidget)) UPanelWidget* CharacterSelectionPanel;
+	UFUNCTION()
+	void OnGamePhaseUpdated(ESS_GamePhase NewGamePhase);
 };

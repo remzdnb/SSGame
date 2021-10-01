@@ -35,12 +35,12 @@ struct FSS_CameraPawnSettings
 	
 	FSS_CameraPawnSettings()
 	{
-		MinArmLength = 200.0f;
+		MinArmLength = 2000.0f;
 		MaxArmLength = 6000.0f;
-		ArmLengthStep = 200.0f;
-		DefaultPitch = -25.0f;
+		ArmLengthStep = 500.0f;
+		DefaultPitch = -45.0f;
 		MinPitch = -89.0f;
-		MaxPitch = 0.0f;
+		MaxPitch = -45.0f;
 		MoveSpeed = 1000.0f;
 		LerpSpeed = 10.0f;
 	}

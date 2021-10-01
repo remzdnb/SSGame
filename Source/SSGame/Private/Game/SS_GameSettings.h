@@ -12,6 +12,15 @@ class USS_GameSettings : public UDataAsset
 public:
 
 	USS_GameSettings();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameMode")
+	float StrategicPhaseTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameMode")
+	float BattlePhaseTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GameMode")
+	float BattleEndPhaseTime;
 	
 	//
 	
@@ -32,22 +41,19 @@ public:
 	//
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
-	FLinearColor NeutralTileParticleColor;
+	FLinearColor TileParticleColor_01;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
+	FLinearColor TileParticleColor_02;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
+	FLinearColor TileParticleColor_03;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
 	FLinearColor AllyTileParticleColor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
 	FLinearColor EnemyTileParticleColor;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
-	float DefaultTileParticleOpacity;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
-	float LightHighlightTileParticleOpacity;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World")
-	float StrongHighlightTileParticleOpacity;
 	
 	//
 

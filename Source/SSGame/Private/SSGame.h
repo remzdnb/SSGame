@@ -7,6 +7,23 @@
 #define TILESIZE 250.0f
 
 UENUM(BlueprintType)
+enum class ESS_GamePhase : uint8
+{
+	WaitingForPlayers,
+	Ready,
+	Strategic,
+	Battle,
+	BattleEnd
+};
+
+UENUM(BlueprintType)
+enum class ESS_PlayerControllerMode : uint8
+{
+	Spawn,
+	Selection
+};
+
+UENUM(BlueprintType)
 enum class ESS_Team : uint8
 {
 	South,
@@ -119,6 +136,28 @@ struct FSS_TileGroupData
 };
 
 USTRUCT(BlueprintType)
+struct FSS_MoveData
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	bool bIsValid;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	ESS_Direction Direction;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	int32 Length;
+	
+	FSS_MoveData()
+	{
+		bIsValid = true;
+		Direction = ESS_Direction::North;
+		Length = 0;
+	}
+};
+
+USTRUCT(BlueprintType)
 struct FSS_PawnData : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
@@ -131,12 +170,6 @@ struct FSS_PawnData : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General")
 	bool bIsSpawnable;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General")
-	FVector MeshScale;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
-	bool bIsMeshFacingXAxis;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	uint8 Size;
@@ -214,7 +247,6 @@ struct FSS_PawnData : public FTableRowBase
 	{
 		DisplayName = "DefaultName";
 		bIsSpawnable = true;
-		bIsMeshFacingXAxis = false;
 		Size = 1;
 		MoveSpeed = 100.0f;
 		MaxHealth = 1000.0f;

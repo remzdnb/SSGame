@@ -1,5 +1,6 @@
 #include "World/SS_Grid.h"
 #include "World/SS_Tile.h"
+#include "Pawn/SS_Character.h"
 #include "Game/SS_GameInstance.h"
 #include "Game/SS_GameSettings.h"
 //
@@ -14,37 +15,12 @@ ASS_Grid::ASS_Grid()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-void ASS_Grid::OnConstruction(const FTransform& Transform)
+void ASS_Grid::Init(TSubclassOf<AActor> TileClass, int32 NewGridSizeY, int32 NewGridSizeX, int32 NewSpawnSize)
 {
-	Super::OnConstruction(Transform);
-
-	SetActorLocation(FVector::ZeroVector);
-	SetActorRotation(FRotator::ZeroRotator);
-}
-
-void ASS_Grid::BeginPlay()
-{
-	Super::BeginPlay();
-
-	GInstance = Cast<USS_GameInstance>(GetGameInstance());
-}
-
-void ASS_Grid::SpawnTiles()
-{
-	// Destroy current layout.
+	GridSizeY = NewGridSizeY;
+	GridSizeX = NewGridSizeX;
+	SpawnSize = NewSpawnSize;
 	
-	for (const auto& Tile : TileArray)
-	{
-		if (Tile)
-		{
-			Tile->Destroy();
-		}
-	}
-	
-	TileArray.Empty();
-
-	// Spawn new layout.
-
 	for (int32 XPosition = 0; XPosition < GridSizeX; XPosition++)
 	{
 		for (int32 YPosition = 0; YPosition < GridSizeY; YPosition++)
@@ -57,7 +33,7 @@ void ASS_Grid::SpawnTiles()
 			const FTransform SpawnTransform = FTransform(GetActorRotation(), SpawnLocation, FVector(1.0f));
 
 			ASS_Tile* const NewTile = GetWorld()->SpawnActorDeferred<ASS_Tile>(
-				TileBP, SpawnTransform,
+				TileClass, SpawnTransform,
 				this,
 				nullptr,
 				ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
@@ -66,12 +42,12 @@ void ASS_Grid::SpawnTiles()
 			{
 				NewTile->TileData.XPosition = XPosition;
 				NewTile->TileData.YPosition = YPosition;
-				if (XPosition < BaseSize)
+				if (XPosition < SpawnSize)
 				{
 					NewTile->TileData.Type = ESS_TileType::Spawn;
 					NewTile->TileData.Team = ESS_Team::South;
 				}
-				else if (XPosition >= GridSizeX - BaseSize)
+				else if (XPosition >= GridSizeX - SpawnSize)
 				{
 					NewTile->TileData.Type = ESS_TileType::Spawn;
 					NewTile->TileData.Team = ESS_Team::North;
@@ -87,6 +63,21 @@ void ASS_Grid::SpawnTiles()
 			}
 		}
 	}
+}
+
+void ASS_Grid::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	SetActorLocation(FVector::ZeroVector);
+	SetActorRotation(FRotator::ZeroRotator);
+}
+
+void ASS_Grid::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GInstance = Cast<USS_GameInstance>(GetGameInstance());
 }
 
 ASS_Pawn* ASS_Grid::SpawnPawn(
@@ -106,20 +97,7 @@ ASS_Pawn* ASS_Grid::SpawnPawn(
 		TileGroup.OriginTile->GetActorLocation().Y + TILESIZE / 2,
 		0.0f
 	);
-
-	FRotator SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
-	/*if (TileGroup.OriginTile->TileData.Team == ESS_Team::South)
-		SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
-	if (TileGroup.OriginTile->TileData.Team == ESS_Team::North)
-		SpawnRotation = FRotator(0.0f, 180.0f, 0.0f);*/
-	
-	const FTransform SpawnTransform = FTransform(
-		SpawnRotation,
-		SpawnLocation,
-		FVector(1.0f)
-	);
-
-	//
+	const FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, SpawnLocation, FVector(1.0f));
 	
 	ASS_Pawn* NewPawn = GetWorld()->SpawnActorDeferred<ASS_Pawn>(
 		PawnData->Class,
@@ -134,7 +112,7 @@ ASS_Pawn* ASS_Grid::SpawnPawn(
 		if (TileGroup.bIsValid == false || TileGroup.bIsInSpawn == false)
 			bIsValidDemoPawn = false;
 		
-		NewPawn->Init(
+		NewPawn->Init_Multicast(
 			PawnDataRowName,
 			TileGroup,
 			TileGroup.OriginTile->TileData.Team,
@@ -154,24 +132,73 @@ ASS_Pawn* ASS_Grid::SpawnPawn(
 	return NewPawn;
 }
 
-bool ASS_Grid::RequestPawnMovement(ASS_Pawn* PawnToMove)
+void ASS_Grid::SpawnPawnServer_Implementation(ASS_Tile* OriginTile, const FName& PawnDataRowName, bool bIsDemoPawn)
 {
-	ASS_Tile* ForwardTile = GetForwardTile(PawnToMove->TileGroup.OriginTile, PawnToMove->Team); // pass direction instead of team
-	if (ForwardTile == nullptr)
+	const FSS_PawnData* const PawnData = GInstance->GetPawnDataFromRow(PawnDataRowName);
+	if (PawnData == nullptr)
+		return;
+	
+	FSS_TileGroupData SpawnTileGroup;
+	GetTileGroup(SpawnTileGroup, OriginTile, PawnData->Size);
+	if (SpawnTileGroup.bIsValid == false || SpawnTileGroup.bIsInSpawn == false)
+		return;
+	
+	const FVector SpawnLocation = FVector(
+		SpawnTileGroup.OriginTile->GetActorLocation().X + TILESIZE / 2,
+		SpawnTileGroup.OriginTile->GetActorLocation().Y + TILESIZE / 2,
+		0.0f
+	);
+	const FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, SpawnLocation, FVector(1.0f));
+	
+	ASS_Pawn* NewPawn = GetWorld()->SpawnActorDeferred<ASS_Pawn>(
+		PawnData->Class,
+		SpawnTransform,
+		this,
+		nullptr,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+	);
+	if (NewPawn)
+	{
+		/*bool bIsValidDemoPawn = true;
+		if (TileGroup.bIsValid == false || TileGroup.bIsInSpawn == false)
+			bIsValidDemoPawn = false;*/
+		
+		NewPawn->Init_Multicast(
+			PawnDataRowName,
+			SpawnTileGroup,
+			SpawnTileGroup.OriginTile->TileData.Team,
+			bIsDemoPawn,
+			true
+		);
+
+		if (bIsDemoPawn == false)
+		{
+			RegisterPawnToGrid(NewPawn, SpawnTileGroup);
+			PawnArray.Add(NewPawn);
+		}
+		
+		UGameplayStatics::FinishSpawningActor(NewPawn, SpawnTransform);
+	}
+}
+
+bool ASS_Grid::RequestCharacterMovement(ASS_Character* CharacterToMove, ESS_Direction Direction)
+{
+	ASS_Tile* NextTile = GetNextTile(CharacterToMove->TileGroup.OriginTile, Direction);
+	if (NextTile == nullptr)
 		return false;
 	
 	FSS_TileGroupData TargetTileGroup;
 	GetTileGroup(
 		TargetTileGroup,
-		ForwardTile,
-		PawnToMove->PawnData.Size,
-		PawnToMove
+		NextTile,
+		CharacterToMove->PawnData.Size,
+		CharacterToMove
 	);
 	if (TargetTileGroup.bIsValid)
 	{
-		UnregisterPawnFromGrid(PawnToMove);
-		RegisterPawnToGrid(PawnToMove, TargetTileGroup);
-		PawnToMove->StartMoveToTileGroup();
+		UnregisterPawnFromGrid(CharacterToMove);
+		RegisterPawnToGrid(CharacterToMove, TargetTileGroup);
+		CharacterToMove->StartMoveToTileGroup();
 
 		/*UE_LOG(LogTemp, Display, TEXT("ASS_Grid::RequestPawnMovement // Valid : TargetTileX = %s // TargetTileY = %s"),
 		       *FString::FromInt(TargetTileGroup.OriginTile->TileData.XPosition),
@@ -230,19 +257,90 @@ ASS_Tile* ASS_Grid::GetTileFromPosition(int32 XPosition, int32 YPosition) const
 	);*/
 }
 
-ASS_Tile* ASS_Grid::GetForwardTile(const ASS_Tile* OriginTile, ESS_Team Team) const
+ASS_Tile* ASS_Grid::GetClosestTile(const ASS_Tile* TargetTile, TArray<ASS_Tile*> TilesToCheck) const
 {
-	if (Team == ESS_Team::South)
+	float MinDistance = 999999999999999999.0f;
+	ASS_Tile* ResultTile = nullptr;
+
+	for (const auto& Tile : TilesToCheck)
 	{
-		return (GetTileFromPosition(OriginTile->TileData.XPosition + 1, OriginTile->TileData.YPosition));
+		const float NewDistance = FVector::Dist(Tile->GetActorLocation(), TargetTile->GetActorLocation());
+		if (NewDistance < MinDistance)
+		{
+			MinDistance = NewDistance;
+			ResultTile = Tile;
+		}
 	}
 	
-	if (Team == ESS_Team::North)
+	return ResultTile;
+}
+
+void ASS_Grid::GetMoveData(FSS_MoveData& MoveDataResult, const ASS_Tile* StartTile, const ASS_Tile* TargetTile) const
+{
+	if ((StartTile->TileData.XPosition == TargetTile->TileData.XPosition &&
+			StartTile->TileData.YPosition == TargetTile->TileData.YPosition) ||
+		(StartTile->TileData.XPosition != TargetTile->TileData.XPosition &&
+			StartTile->TileData.YPosition != TargetTile->TileData.YPosition))
 	{
-		return (GetTileFromPosition(OriginTile->TileData.XPosition - 1, OriginTile->TileData.YPosition));
+		MoveDataResult.bIsValid = false;
+		return;
 	}
 	
+	if (StartTile->TileData.XPosition != TargetTile->TileData.XPosition)
+	{
+		StartTile->TileData.XPosition < TargetTile->TileData.XPosition
+			? MoveDataResult.Direction = ESS_Direction::North
+			: MoveDataResult.Direction = ESS_Direction::South;
+
+		MoveDataResult.Length = FMath::Abs(StartTile->TileData.XPosition - TargetTile->TileData.XPosition);
+	}
+	else
+	{
+		StartTile->TileData.YPosition < TargetTile->TileData.YPosition
+			? MoveDataResult.Direction = ESS_Direction::East
+			: MoveDataResult.Direction = ESS_Direction::West;
+
+		MoveDataResult.Length = FMath::Abs(StartTile->TileData.YPosition - TargetTile->TileData.YPosition);
+	}
+}
+
+ASS_Tile* ASS_Grid::GetTileFromMoveData(const ASS_Tile* OriginTile, const FSS_MoveData& MoveData)
+{
+	if (MoveData.Direction == ESS_Direction::North)
+	{
+		return GetTileFromPosition(OriginTile->TileData.XPosition + MoveData.Length, OriginTile->TileData.YPosition);
+	}
+	if (MoveData.Direction == ESS_Direction::South)
+	{
+		return GetTileFromPosition(OriginTile->TileData.XPosition - MoveData.Length, OriginTile->TileData.YPosition);
+	}
+	if (MoveData.Direction == ESS_Direction::East)
+	{
+		return GetTileFromPosition(OriginTile->TileData.XPosition, OriginTile->TileData.YPosition + MoveData.Length);
+	}
+	if (MoveData.Direction == ESS_Direction::West)
+	{
+		return GetTileFromPosition(OriginTile->TileData.XPosition, OriginTile->TileData.YPosition - MoveData.Length);
+	}
+
 	return nullptr;
+}
+
+ASS_Tile* ASS_Grid::GetNextTile(const ASS_Tile* OriginTile, ESS_Direction Direction) const
+{
+	switch (Direction)
+	{
+		case ESS_Direction::North:
+			return (GetTileFromPosition(OriginTile->TileData.XPosition + 1, OriginTile->TileData.YPosition));
+		case ESS_Direction::South:
+			return (GetTileFromPosition(OriginTile->TileData.XPosition - 1, OriginTile->TileData.YPosition));
+		case ESS_Direction::East:
+			return (GetTileFromPosition(OriginTile->TileData.XPosition, OriginTile->TileData.YPosition + 1));
+		case ESS_Direction::West:
+			return (GetTileFromPosition(OriginTile->TileData.XPosition, OriginTile->TileData.YPosition - 1));
+		default:
+			return GetTileFromPosition(0, 0);
+	}
 }
 
 TArray<ASS_Tile*> ASS_Grid::GetTilesFromSquare(const ASS_Tile* FirstCornerTile, const ASS_Tile* SecondCornerTile) const
@@ -286,6 +384,7 @@ void ASS_Grid::GetTileGroup(FSS_TileGroupData& GroupResult, ASS_Tile* OriginTile
 {
 	GroupResult.bIsValid = true;
 	GroupResult.bIsInSpawn = true;
+	GroupResult.OriginTile = OriginTile;
 	GroupResult.TileArray.Empty();
 	
 	if (OriginTile == nullptr)
@@ -293,9 +392,7 @@ void ASS_Grid::GetTileGroup(FSS_TileGroupData& GroupResult, ASS_Tile* OriginTile
 		GroupResult.bIsValid = false;
 		return;
 	}
-
-	GroupResult.OriginTile = OriginTile;
-
+	
 	for (int32 XOffset = 0; XOffset < GroupSize; XOffset++)
 	{
 		for (int32 YOffset = 0; YOffset < GroupSize; YOffset++)

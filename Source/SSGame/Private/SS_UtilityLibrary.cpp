@@ -1,13 +1,13 @@
-#include "RZ_UtilityLibrary.h"
+#include "SS_UtilityLibrary.h"
 #include "Engine/Engine.h"
 
-RZ_UtilityLibrary::RZ_UtilityLibrary()
+SS_UtilityLibrary::SS_UtilityLibrary()
 {
 }
 
 #pragma region +++++ Actor ...
 
-TArray<AActor*> RZ_UtilityLibrary::OrderActorsByDistance(TArray<AActor*> ActorsToOrder, FVector TargetLocation)
+TArray<AActor*> SS_UtilityLibrary::OrderActorsByDistance(TArray<AActor*> ActorsToOrder, FVector TargetLocation)
 {
 	TArray<AActor*> TempArray = ActorsToOrder;
 	TArray<AActor*> ResultArray;
@@ -22,7 +22,7 @@ TArray<AActor*> RZ_UtilityLibrary::OrderActorsByDistance(TArray<AActor*> ActorsT
 	return ResultArray;
 }
 
-AActor* RZ_UtilityLibrary::GetClosestActorFromLocation(TArray<AActor*> ActorArray, FVector TargetLocation)
+AActor* SS_UtilityLibrary::GetClosestActorFromLocation(TArray<AActor*> ActorArray, FVector TargetLocation)
 {
 	float MinDistance = 999999999999999999.0f;
 	AActor* ResultActor = nullptr;
@@ -47,9 +47,9 @@ AActor* RZ_UtilityLibrary::GetClosestActorFromLocation(TArray<AActor*> ActorArra
 
 #pragma region +++++ Actor ...
 
-bool RZ_UtilityLibrary::CompareFloats(float Value1, float Value2, float Acceptance)
+bool SS_UtilityLibrary::CompareFloats(float Value1, float Value2, float Acceptance)
 {
-	RZ_UtilityLibrary::PrintFloatToScreen("RZ_UtilityLibrary::CompareFloat : ", Value1 - Value2, FColor::Orange, -1, 3.0f);
+	SS_UtilityLibrary::PrintFloatToScreen("SS_UtilityLibrary::CompareFloat : ", Value1 - Value2, FColor::Orange, -1, 3.0f);
 	
 	if (FMath::Abs(Value1) - FMath::Abs(Value2) <= Acceptance)
 		return true;
@@ -61,21 +61,21 @@ bool RZ_UtilityLibrary::CompareFloats(float Value1, float Value2, float Acceptan
 
 #pragma region +++++ Debug ...
 
-void RZ_UtilityLibrary::PrintStringToScreen(const FString& PrefixString, const FString& InputString, FColor Color, int32 Key, float TimeToDisplay)
+void SS_UtilityLibrary::PrintStringToScreen(const FString& PrefixString, const FString& InputString, FColor Color, int32 Key, float TimeToDisplay)
 {
 	const FString StringToPrint = PrefixString + InputString;
 
 	GEngine->AddOnScreenDebugMessage(Key, TimeToDisplay, Color, StringToPrint);
 }
 
-void RZ_UtilityLibrary::PrintFloatToScreen(const FString& PrefixString, float InputFloat, FColor Color, int32 Key, float TimeToDisplay)
+void SS_UtilityLibrary::PrintFloatToScreen(const FString& PrefixString, float InputFloat, FColor Color, int32 Key, float TimeToDisplay)
 {
 	const FString StringToPrint = PrefixString + FString::SanitizeFloat(InputFloat, 4);
 
 	GEngine->AddOnScreenDebugMessage(Key, TimeToDisplay, Color, StringToPrint);
 }
 
-void RZ_UtilityLibrary::PrintVectorToScreen(const FString& PrefixString, FVector InputVector, FColor Color, int32 Key, float TimeToDisplay)
+void SS_UtilityLibrary::PrintVectorToScreen(const FString& PrefixString, FVector InputVector, FColor Color, int32 Key, float TimeToDisplay)
 {
 	const FString StringToPrint = PrefixString
 		+ "X : " + FString::SanitizeFloat(InputVector.X, 4)
@@ -88,7 +88,7 @@ void RZ_UtilityLibrary::PrintVectorToScreen(const FString& PrefixString, FVector
 	}
 }
 
-void RZ_UtilityLibrary::PrintBoolToScreen(bool bBoolToPrint, FString PrefixString, float TimeToDisplay)
+void SS_UtilityLibrary::PrintBoolToScreen(bool bBoolToPrint, FString PrefixString, float TimeToDisplay)
 {
 	FString StringToPrint;
 	if (bBoolToPrint)
@@ -99,7 +99,7 @@ void RZ_UtilityLibrary::PrintBoolToScreen(bool bBoolToPrint, FString PrefixStrin
 	GEngine->AddOnScreenDebugMessage(-1, TimeToDisplay, FColor::Red, PrefixString + FString::Printf(TEXT(" : %s"), *StringToPrint));
 }
 
-void RZ_UtilityLibrary::PrintRotatorToScreen(FRotator RotatorToPrint, FString PrefixString, int32 Key, float TimeToDisplay)
+void SS_UtilityLibrary::PrintRotatorToScreen(FRotator RotatorToPrint, FString PrefixString, int32 Key, float TimeToDisplay)
 {
 	const FString StringToPrint = PrefixString + " / Pitch : " + FString::SanitizeFloat(RotatorToPrint.Pitch) + " / Yaw : " + FString::SanitizeFloat(RotatorToPrint.Yaw) + " / Roll : " + FString::SanitizeFloat(RotatorToPrint.Roll);
 	GEngine->AddOnScreenDebugMessage(Key, TimeToDisplay, FColor::Magenta, StringToPrint);

@@ -1,5 +1,5 @@
 #include "Pawn/SS_PawnAIController.h"
-#include "Pawn/SS_Pawn.h"
+#include "Pawn/SS_Character.h"
 #include "World/SS_Grid.h"
 //
 #include "EngineUtils.h"
@@ -59,15 +59,13 @@ void ASS_PawnAIController::OnPossess(APawn* InPawn)
 
 void ASS_PawnAIController::StartNextAction()
 {
-	if (ControlledPawn->StartNewAttack() == false)
+	ASS_Character* Char = Cast<ASS_Character>(ControlledPawn);
+	if (Char)
 	{
-		if (bWantsToMove && Grid->RequestPawnMovement(ControlledPawn))
+		if (ControlledPawn->StartNewAttack() == false)
 		{
-			ControlledPawn->StartNewMove(ESS_PawnMoveType::Move);
-		}
-		else
-		{
-			ControlledPawn->StartNewMove(ESS_PawnMoveType::Idle);
+			Char->StartNewMove(ESS_PawnMoveType::Move);
 		}
 	}
+
 }

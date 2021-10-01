@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 
-class RZ_UTILITYPLUGIN_API RZ_UtilityLibrary
+class SS_UtilityLibrary
 {
 	
 public:
 
-	RZ_UtilityLibrary();
+	SS_UtilityLibrary();
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///// Conversions

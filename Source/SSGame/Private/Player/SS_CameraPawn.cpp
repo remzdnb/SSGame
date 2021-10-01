@@ -67,7 +67,7 @@ void ASS_CameraPawn::AddPitchInput(float AxisValue)
 	if (AxisValue == 0 || bIsRotationEnabled == false)
 		return;
 
-	const float NewPitch = SpringArmCT->GetComponentRotation().Pitch + (AxisValue * GetWorld()->GetDeltaSeconds() * 50.0f);
+	const float NewPitch = SpringArmCT->GetComponentRotation().Pitch + (AxisValue * GetWorld()->GetDeltaSeconds() * 100.0f);
 	
 	if (NewPitch > CPSettings.MaxPitch || NewPitch < CPSettings.MinPitch)
 		return;
@@ -90,7 +90,7 @@ void ASS_CameraPawn::AddYawInput(float AxisValue)
 	if (AxisValue == 0 || bIsRotationEnabled == false)
 		return;
 
-	const float NewYaw = SpringArmCT->GetComponentRotation().Yaw + (AxisValue * GetWorld()->GetDeltaSeconds() * 50.0f);
+	const float NewYaw = SpringArmCT->GetComponentRotation().Yaw + (AxisValue * GetWorld()->GetDeltaSeconds() * 100.0f);
 
 	SpringArmCT->SetWorldRotation(FRotator(
 		SpringArmCT->GetComponentRotation().Pitch,

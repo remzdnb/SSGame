@@ -5,6 +5,13 @@
 #include "GameFramework/PlayerController.h"
 #include "SS_PlayerController.generated.h"
 
+class USS_GameInstance;
+class ASS_PlayerState;
+class ASS_CameraPawn;
+class USS_MainHUDWidget;
+class ASS_Grid;
+class ASS_Tile;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNewSelectedPawnDelegate);
 
 UCLASS()
@@ -22,17 +29,17 @@ public:
 	virtual void OnRep_PlayerState() override;
 	virtual void OnRep_Pawn() override;
 
-	// References
-
 private:
 	
-	class USS_GameInstance* GInstance;
-	class ASS_CameraPawn* CameraPawn;
-	class USS_MainHUDWidget* HUDWidget;
-	class ASS_PlayerState* PState;
-	class ASS_Grid* Grid;
+	USS_GameInstance* GInstance;
+	ASS_CameraPawn* CameraPawn;
+	USS_MainHUDWidget* HUDWidget;
+	ASS_PlayerState* PState;
+	ASS_Grid* Grid;
 
-	///// Spawn
+	ESS_PlayerControllerMode PCMode;
+
+	///// Pawns
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 public:
@@ -49,16 +56,13 @@ public:
 
 private:
 
-	TWeakObjectPtr<class ASS_Tile> HoveredTile;
-	TWeakObjectPtr<class ASS_Tile> SelectedTile;
+	ASS_Tile* HoveredTile;
+	ASS_Tile* DragStartTile;
+	TArray<ASS_Tile*> SelectedTiles;
+	TArray<TWeakObjectPtr<ASS_Pawn>> SelectedPawns;
+	FSS_MoveData SavedMoveData;
 
 	//
-
-	UPROPERTY()
-	bool bIsSpawnMode;
-
-	UPROPERTY()
-	bool bIsBatchSpawnMode;
 	
 	UPROPERTY()
 	FName SelectedPawnDataRowName;
@@ -76,6 +80,21 @@ private:
 	
 	UFUNCTION()
 	void UpdateHoveredTile();
+
+	UFUNCTION()
+	void UpdateDemoPawns();
+
+	UFUNCTION()
+	void UpdateSelectedPawns();
+
+	UFUNCTION()
+	void UnselectAllPawns();
+
+	UFUNCTION()
+	void UpdateDemoMovement();
+
+	UFUNCTION(Server, Reliable)
+	void SpawnPawn(); // query spawn pawn to grid
 	
 	///// Input
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -85,12 +104,7 @@ public:
 	virtual void SetupInputComponent() override;
 
 private:
-
-	UPROPERTY()
-	bool bIsLeftMouseButtonPressed;
-
-	//
-
+	
 	UFUNCTION() void LookUpAxis(float AxisValue);
 	UFUNCTION() void LookRightAxis(float AxisValue);
 	UFUNCTION() void ZoomAxis(float AxisValue);

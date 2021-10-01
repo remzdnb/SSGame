@@ -18,14 +18,9 @@ public:
 	
 	ASS_Pawn();
 
-	UFUNCTION()
-	void Init(
-		const FName& PawnDataRowName,
-		const FSS_TileGroupData& InitialTileGroup,
-		ESS_Team NewTeam = ESS_Team::Neutral,
-		bool bIsDemoPawn = false,
-		bool bIsDemoPawnValidLocation = false
-	);
+	UFUNCTION(NetMulticast, Reliable)
+	virtual void Init_Multicast(const FName& PawnDataRowName, const FSS_TileGroupData& SpawnTileGroup, ESS_Team NewTeam,
+	                            bool bIsDemoPawn = false, bool bIsDemoPawnValidLocation = false);
 	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -42,16 +37,17 @@ public:
 
 	FOnPawnActionCompletedDelegate OnPawnActionCompletedEvent;
 	FOnPawnStateUpdatedDelegate OnPawnStateUpdatedEvent;
-
-	UPROPERTY() FSS_PawnData PawnData;
-	UPROPERTY() ESS_Team Team;
-	UPROPERTY() ESS_PawnState State;
+	
+	FSS_PawnData PawnData;
+	FSS_TileGroupData TileGroup;
+	ESS_Team Team;
+	ESS_PawnState State;
 	
 	//
 
-	UFUNCTION() class USkeletalMeshComponent* GetMesh() const { return MeshCT; }
+	UFUNCTION() class USkeletalMeshComponent* GetMesh() const { return SkeletalMeshCT; }
 
-private:
+protected:
 	
 	// Scene Components
 
@@ -59,10 +55,10 @@ private:
 	class USceneComponent* RootCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class USceneComponent* MeshAxisCT;
+	class USceneComponent* RotationAxisCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* MeshCT;
+	class USkeletalMeshComponent* SkeletalMeshCT;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* MeleeWeaponMeshCT;
@@ -92,53 +88,11 @@ private:
 	class ASS_Grid* Grid;
 	class USS_PawnOTMWidget* OTMWidget;
 
-	///// Movement
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-public:
-
-	UFUNCTION()
-	void StartNewMove(ESS_PawnMoveType NewMoveType);
-	
-	UFUNCTION()
-	void StartMoveToTileGroup();
-
 	//
-
-	UPROPERTY()
-	FSS_TileGroupData TileGroup;
-
-private:
-
-	UPROPERTY()
-	FRotator DefaultRotation;
 	
 	UPROPERTY()
-	UCurveFloat* MoveCurve;
+	FRotator DefaultAxisRotation;
 
-	UPROPERTY()
-	FTimeline MoveTimeline;
-
-	UPROPERTY()
-	float MoveTimelineProgressValue;
-
-	UPROPERTY()
-	FVector MoveStartLocation;
-
-	UPROPERTY()
-	FVector MoveDirection;
-
-	UPROPERTY()
-	float MoveDistance;
-
-	//
-
-	UFUNCTION()
-	void MoveTimelineProgress(float Value);
-
-	UFUNCTION()
-	void MoveTimelineEnd();
-	
 	///// Combat
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -207,4 +161,12 @@ private:
 	UFUNCTION()
 	void OnRangedDetectionSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	///// Rendering / FX
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+public:
+
+	UFUNCTION()
+	void ToggleHighlight(bool bEnable);
 };

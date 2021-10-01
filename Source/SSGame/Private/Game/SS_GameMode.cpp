@@ -5,6 +5,7 @@
 #include "Game/SS_GameAIController.h"
 #include "Player/SS_PlayerController.h"
 #include "Player/SS_PlayerState.h"
+#include "World/SS_Grid.h"
 //
 #include "Kismet/GameplayStatics.h"
 
@@ -23,6 +24,7 @@ void ASS_GameMode::PostInitializeComponents()
 	Super::PostInitializeComponents();
 
 	GInstance = Cast<USS_GameInstance>(GetGameInstance());
+	GState = Cast<ASS_GameState>(GetWorld()->GetGameState());
 }
 
 void ASS_GameMode::BeginPlay()
@@ -43,6 +45,22 @@ void ASS_GameMode::BeginPlay()
 			UGameplayStatics::FinishSpawningActor(GameAIController, FTransform::Identity);
 		}
 	}
+
+	FSS_TileGroupData SouthKingTileGroup;
+	GInstance->Grid->GetTileGroup(
+		SouthKingTileGroup,
+		GInstance->Grid->GetTileFromPosition(0, 0),
+		1
+	);
+	GInstance->Grid->SpawnPawn(SouthKingTileGroup, "King");
+
+	FSS_TileGroupData NorthKingTileGroup;
+	GInstance->Grid->GetTileGroup(
+		SouthKingTileGroup,
+		GInstance->Grid->GetTileFromPosition(GInstance->Grid->GridSizeX - 1, GInstance->Grid->GridSizeY - 1),
+		1
+	);
+	GInstance->Grid->SpawnPawn(SouthKingTileGroup, "King");
 }
 
 void ASS_GameMode::PostLogin(APlayerController* NewPlayer)
@@ -62,5 +80,64 @@ void ASS_GameMode::PostLogin(APlayerController* NewPlayer)
 			SouthTeamController = NewPlayerController;
 			Cast<ASS_PlayerState>(NewPlayerController->PlayerState)->Team = ESS_Team::South;
 		}
+	}
+
+	if (SouthTeamController && NorthTeamController)
+	{
+		GState->SetNewPhaseMulticast(ESS_GamePhase::Ready);
+		SetNextPhase();
+	}
+}
+//GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
+
+void ASS_GameMode::SetNextPhase()
+{
+	if (GState->GetCurrentGamePhase() == ESS_GamePhase::Ready)
+	{
+		GState->SetNewPhaseMulticast(ESS_GamePhase::Strategic);
+		GetWorldTimerManager().SetTimer(
+			PhaseTimerHandle,
+			this,
+			&ASS_GameMode::SetNextPhase,
+			GInstance->GameSettings->StrategicPhaseTime,
+			false,
+			GInstance->GameSettings->StrategicPhaseTime
+		);
+	}
+	else if (GState->GetCurrentGamePhase() == ESS_GamePhase::Strategic)
+	{
+		GState->SetNewPhaseMulticast(ESS_GamePhase::Battle);
+		GetWorldTimerManager().SetTimer(
+			PhaseTimerHandle,
+			this,
+			&ASS_GameMode::SetNextPhase,
+			GInstance->GameSettings->BattlePhaseTime,
+			false,
+			GInstance->GameSettings->BattlePhaseTime
+		);
+	}
+	else if (GState->GetCurrentGamePhase() == ESS_GamePhase::Battle)
+	{
+		GState->SetNewPhaseMulticast(ESS_GamePhase::BattleEnd);
+		GetWorldTimerManager().SetTimer(
+			PhaseTimerHandle,
+			this,
+			&ASS_GameMode::SetNextPhase,
+			GInstance->GameSettings->BattleEndPhaseTime,
+			false,
+			GInstance->GameSettings->BattleEndPhaseTime
+		);
+	}
+	else if (GState->GetCurrentGamePhase() == ESS_GamePhase::BattleEnd)
+	{
+		GState->SetNewPhaseMulticast(ESS_GamePhase::Strategic);
+		GetWorldTimerManager().SetTimer(
+			PhaseTimerHandle,
+			this,
+			&ASS_GameMode::SetNextPhase,
+			GInstance->GameSettings->StrategicPhaseTime,
+			false,
+			GInstance->GameSettings->StrategicPhaseTime
+		);
 	}
 }
